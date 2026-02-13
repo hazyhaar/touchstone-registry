@@ -1,0 +1,19 @@
+id: firstnames-uk
+version: "2025-01"
+jurisdiction: uk
+entity_type: first_name
+source: "ONS baby names"
+source_url: "https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/livebirths"
+license: CC0
+data_file: data.csv
+format:
+  delimiter: ";"
+  encoding: utf-8
+  has_header: true
+  key_column: "term"
+  normalize: lowercase_ascii
+metadata_columns:
+  - name: frequency
+    column: "frequency"
+  - name: gender
+    column: "gender"

@@ -1,0 +1,19 @@
+id: prenoms-fr
+version: "2025-01"
+jurisdiction: fr
+entity_type: first_name
+source: "INSEE fichier des prénoms"
+source_url: "https://www.insee.fr/fr/statistiques/2540004"
+license: CC0
+data_file: data.csv
+format:
+  delimiter: ";"
+  encoding: utf-8
+  has_header: true
+  key_column: "term"
+  normalize: lowercase_ascii
+metadata_columns:
+  - name: frequency
+    column: "frequency"
+  - name: gender
+    column: "gender"

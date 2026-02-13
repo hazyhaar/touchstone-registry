@@ -1,0 +1,19 @@
+id: communes-fr
+version: "2025-01"
+jurisdiction: fr
+entity_type: city
+source: "COG INSEE"
+source_url: "https://www.insee.fr/fr/information/2560452"
+license: CC0
+data_file: data.csv
+format:
+  delimiter: ";"
+  encoding: utf-8
+  has_header: true
+  key_column: "term"
+  normalize: lowercase_ascii
+metadata_columns:
+  - name: department
+    column: "department"
+  - name: population
+    column: "population"
