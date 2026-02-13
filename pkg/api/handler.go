@@ -6,89 +6,96 @@ import (
 	"strings"
 
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
+	"github.com/hazyhaar/touchstone-registry/pkg/kit"
 )
 
 // NewRouter returns an http.Handler with all Touchstone API routes.
 func NewRouter(reg *dict.Registry) http.Handler {
 	mux := http.NewServeMux()
-	h := &handler{reg: reg}
+	h := &handler{
+		classifyTerm:  classifyTermEndpoint(reg),
+		classifyBatch: classifyBatchEndpoint(reg),
+		listDicts:     listDictsEndpoint(reg),
+		reg:           reg,
+	}
 
 	mux.HandleFunc("GET /v1/classify/batch", methodNotAllowed) // prevent GET on batch
-	mux.HandleFunc("POST /v1/classify/batch", h.classifyBatch)
-	mux.HandleFunc("GET /v1/classify/{term}", h.classifyTerm)
-	mux.HandleFunc("GET /v1/dicts", h.listDicts)
-	mux.HandleFunc("GET /v1/health", h.health)
+	mux.HandleFunc("POST /v1/classify/batch", h.handleClassifyBatch)
+	mux.HandleFunc("GET /v1/classify/{term}", h.handleClassifyTerm)
+	mux.HandleFunc("GET /v1/dicts", h.handleListDicts)
+	mux.HandleFunc("GET /v1/health", h.handleHealth)
 
 	return cors(mux)
 }
 
 type handler struct {
-	reg *dict.Registry
+	classifyTerm  kit.Endpoint
+	classifyBatch kit.Endpoint
+	listDicts     kit.Endpoint
+	reg           *dict.Registry
 }
 
 // --- classify single term ---
 
-func (h *handler) classifyTerm(w http.ResponseWriter, r *http.Request) {
+func (h *handler) handleClassifyTerm(w http.ResponseWriter, r *http.Request) {
 	term := r.PathValue("term")
 	if term == "" {
 		writeError(w, http.StatusBadRequest, "missing term")
 		return
 	}
 
-	opts := parseOpts(r)
-	result := h.reg.Classify(term, opts)
-	writeJSON(w, http.StatusOK, result)
+	resp, err := h.classifyTerm(r.Context(), &classifyTermReq{
+		Term: term,
+		Opts: parseOpts(r),
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // --- classify batch ---
 
-type batchRequest struct {
+type httpBatchRequest struct {
 	Terms         []string `json:"terms"`
 	Jurisdictions []string `json:"jurisdictions,omitempty"`
 	Types         []string `json:"types,omitempty"`
 	Dicts         []string `json:"dicts,omitempty"`
 }
 
-type batchResponse struct {
-	Results []*dict.ClassifyResult `json:"results"`
-}
-
-func (h *handler) classifyBatch(w http.ResponseWriter, r *http.Request) {
-	var req batchRequest
+func (h *handler) handleClassifyBatch(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64*1024) // 64 KiB max
+	var req httpBatchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	if len(req.Terms) == 0 {
-		writeError(w, http.StatusBadRequest, "terms array is empty")
-		return
-	}
-	if len(req.Terms) > 100 {
-		writeError(w, http.StatusBadRequest, "too many terms (max 100)")
-		return
-	}
 
-	opts := &dict.ClassifyOptions{
-		Jurisdictions: req.Jurisdictions,
-		Types:         req.Types,
-		Dicts:         req.Dicts,
-	}
-
-	resp := batchResponse{Results: make([]*dict.ClassifyResult, len(req.Terms))}
-	for i, term := range req.Terms {
-		resp.Results[i] = h.reg.Classify(term, opts)
+	resp, err := h.classifyBatch(r.Context(), &classifyBatchReq{
+		Terms: req.Terms,
+		Opts: &dict.ClassifyOptions{
+			Jurisdictions: req.Jurisdictions,
+			Types:         req.Types,
+			Dicts:         req.Dicts,
+		},
+	})
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
 // --- list dicts ---
 
-type dictsResponse struct {
-	Dictionaries []dict.DictInfo `json:"dictionaries"`
-}
-
-func (h *handler) listDicts(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, dictsResponse{Dictionaries: h.reg.ListDicts()})
+func (h *handler) handleListDicts(w http.ResponseWriter, r *http.Request) {
+	resp, err := h.listDicts(r.Context(), nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // --- health ---
@@ -99,7 +106,7 @@ type healthResponse struct {
 	TotalEntries int    `json:"total_entries"`
 }
 
-func (h *handler) health(w http.ResponseWriter, r *http.Request) {
+func (h *handler) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, healthResponse{
 		Status:       "ok",
 		Dictionaries: h.reg.DictCount(),

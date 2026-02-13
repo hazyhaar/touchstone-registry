@@ -1,0 +1,38 @@
+id: iban
+version: "2026-02"
+jurisdiction: intl
+entity_type: iban
+source: "ISO 13616 regex + MOD 97-10"
+license: CC0
+method: pattern
+patterns:
+  - name: iban_fr
+    regex: "^FR\\d{2}\\d{10}[A-Z0-9]{11}\\d{2}$"
+    validator: mod97
+  - name: iban_de
+    regex: "^DE\\d{2}\\d{18}$"
+    validator: mod97
+  - name: iban_gb
+    regex: "^GB\\d{2}[A-Z]{4}\\d{14}$"
+    validator: mod97
+  - name: iban_es
+    regex: "^ES\\d{2}\\d{20}$"
+    validator: mod97
+  - name: iban_it
+    regex: "^IT\\d{2}[A-Z]\\d{10}[A-Z0-9]{12}$"
+    validator: mod97
+  - name: iban_be
+    regex: "^BE\\d{2}\\d{12}$"
+    validator: mod97
+  - name: iban_nl
+    regex: "^NL\\d{2}[A-Z]{4}\\d{10}$"
+    validator: mod97
+  - name: iban_ch
+    regex: "^CH\\d{2}\\d{17}$"
+    validator: mod97
+  - name: iban_lu
+    regex: "^LU\\d{2}\\d{16}$"
+    validator: mod97
+  - name: iban_pt
+    regex: "^PT\\d{2}\\d{21}$"
+    validator: mod97

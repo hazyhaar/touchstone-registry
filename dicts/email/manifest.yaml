@@ -1,0 +1,10 @@
+id: email
+version: "2026-02"
+jurisdiction: intl
+entity_type: email
+source: "RFC 5322 simplified regex"
+license: CC0
+method: pattern
+patterns:
+  - name: email
+    regex: "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"

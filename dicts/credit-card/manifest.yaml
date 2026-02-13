@@ -1,0 +1,17 @@
+id: credit-card
+version: "2026-02"
+jurisdiction: intl
+entity_type: credit_card
+source: "ISO/IEC 7812 regex + Luhn"
+license: CC0
+method: pattern
+patterns:
+  - name: visa
+    regex: "^4\\d{12}(\\d{3})?$"
+    validator: luhn
+  - name: mastercard
+    regex: "^5[1-5]\\d{14}$"
+    validator: luhn
+  - name: amex
+    regex: "^3[47]\\d{13}$"
+    validator: luhn

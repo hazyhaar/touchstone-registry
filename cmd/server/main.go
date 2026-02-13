@@ -5,19 +5,25 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/hazyhaar/touchstone-registry/pkg/api"
+	"github.com/hazyhaar/touchstone-registry/pkg/chassis"
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
+	"github.com/hazyhaar/touchstone-registry/pkg/importer"
+	"github.com/mark3labs/mcp-go/server"
 	"gopkg.in/yaml.v3"
 )
 
 type config struct {
 	Addr     string `yaml:"addr"`
 	DictsDir string `yaml:"dicts_dir"`
+	CertFile string `yaml:"cert_file"`
+	KeyFile  string `yaml:"key_file"`
 }
 
 func main() {
@@ -29,6 +35,8 @@ func main() {
 	switch os.Args[1] {
 	case "serve":
 		cmdServe(os.Args[2:])
+	case "import":
+		cmdImport(os.Args[2:])
 	default:
 		usage()
 		os.Exit(1)
@@ -36,7 +44,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: touchstone <command>\n\nCommands:\n  serve   Start the HTTP server\n")
+	fmt.Fprintf(os.Stderr, "Usage: touchstone <command>\n\nCommands:\n  serve    Start the server (HTTP/1.1+2, HTTP/3, MCP-over-QUIC)\n  import   Download and build dictionaries from public sources\n")
 }
 
 func cmdServe(args []string) {
@@ -47,6 +55,19 @@ func cmdServe(args []string) {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	cfg := loadConfig(*cfgPath, logger)
+
+	// Source availability checker.
+	sdb, err := importer.OpenSourceDB(filepath.Join(cfg.DictsDir, "sources.db"))
+	if err != nil {
+		logger.Error("failed to open sources database", "error", err)
+		os.Exit(1)
+	}
+	defer sdb.Close()
+
+	if err := sdb.Seed(importer.All()); err != nil {
+		logger.Error("failed to seed import sources", "error", err)
+		os.Exit(1)
+	}
 
 	// Load dictionaries.
 	reg := dict.NewRegistry(cfg.DictsDir)
@@ -59,10 +80,26 @@ func cmdServe(args []string) {
 	// HTTP router.
 	router := api.NewRouter(reg)
 
-	srv := &http.Server{
-		Addr:    cfg.Addr,
-		Handler: router,
+	// MCP server with Touchstone tools.
+	mcpSrv := server.NewMCPServer("touchstone", "0.1.0")
+	api.RegisterMCPTools(mcpSrv, reg)
+
+	// Chassis: dual-transport (TCP+QUIC) with TLS, security headers, MCP.
+	srv, err := chassis.New(chassis.Config{
+		Addr:      cfg.Addr,
+		Handler:   router,
+		MCPServer: mcpSrv,
+		CertFile:  cfg.CertFile,
+		KeyFile:   cfg.KeyFile,
+		Logger:    logger,
+	})
+	if err != nil {
+		logger.Error("chassis init failed", "error", err)
+		os.Exit(1)
 	}
+
+	// Start source availability checker (every 24h).
+	checker := importer.NewChecker(sdb, logger, 24*time.Hour)
 
 	// SIGHUP: hot reload dictionaries.
 	// SIGINT/SIGTERM: graceful shutdown.
@@ -82,18 +119,23 @@ func cmdServe(args []string) {
 		}
 	}()
 
-	// Start server.
+	go checker.Start(ctx)
+
+	// Start chassis (TCP + QUIC).
 	go func() {
-		logger.Info("touchstone listening", "addr", cfg.Addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error("server error", "error", err)
+		if err := srv.Start(ctx); err != nil {
+			logger.Error("chassis error", "error", err)
 			os.Exit(1)
 		}
 	}()
 
 	<-ctx.Done()
 	logger.Info("shutting down")
-	srv.Shutdown(context.Background())
+	shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Stop(shutCtx); err != nil {
+		logger.Error("shutdown error", "error", err)
+	}
 }
 
 func loadConfig(path string, logger *slog.Logger) config {

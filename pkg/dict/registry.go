@@ -80,6 +80,7 @@ type ClassifyOptions struct {
 }
 
 // Classify looks up a term across all (or filtered) dictionaries.
+// Dictionaries are iterated in sorted ID order for deterministic results.
 func (r *Registry) Classify(term string, opts *ClassifyOptions) *ClassifyResult {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -89,7 +90,15 @@ func (r *Registry) Classify(term string, opts *ClassifyOptions) *ClassifyResult 
 		Matches: []Match{},
 	}
 
-	for _, d := range r.dicts {
+	// Sorted iteration for deterministic Normalized field.
+	ids := make([]string, 0, len(r.dicts))
+	for id := range r.dicts {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	for _, id := range ids {
+		d := r.dicts[id]
 		if opts != nil {
 			if len(opts.Jurisdictions) > 0 && !contains(opts.Jurisdictions, d.Manifest.Jurisdiction) {
 				continue
@@ -102,7 +111,7 @@ func (r *Registry) Classify(term string, opts *ClassifyOptions) *ClassifyResult 
 			}
 		}
 
-		entry, ok := d.Lookup(term)
+		entry, ok := d.Classify(term)
 		if !ok {
 			continue
 		}

@@ -1,0 +1,11 @@
+id: nir-fr
+version: "2026-02"
+jurisdiction: fr
+entity_type: nir
+source: "Securite sociale FR (NIR 15 digits)"
+license: CC0
+method: pattern
+patterns:
+  - name: nir
+    regex: "^[12]\\d{2}(0[1-9]|1[0-2]|[2-9]\\d)(\\d{2}|2[AB])\\d{8}$"
+    validator: nir

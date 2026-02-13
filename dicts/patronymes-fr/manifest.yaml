@@ -3,7 +3,7 @@ version: "2025-01"
 jurisdiction: fr
 entity_type: surname
 source: "INSEE fichier des noms de famille"
-source_url: "https://www.insee.fr/fr/statistiques/2540004"
+source_url: "https://www.insee.fr/fr/statistiques/3536630"
 license: CC0
 data_file: data.csv
 format:

@@ -4,9 +4,13 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/text/encoding/htmlindex"
+	"golang.org/x/text/transform"
 )
 
 // Entry is a single term in a dictionary, with optional metadata.
@@ -19,9 +23,10 @@ type Dictionary struct {
 	Manifest  *Manifest        `json:"manifest"`
 	Entries   map[string]*Entry `json:"-"`
 	normalize Normalizer
+	patterns  *patternMatcher
 }
 
-// LoadDictionary reads a manifest.yaml and its data.csv from a directory.
+// LoadDictionary reads a manifest.yaml and loads data from gob, csv, or patterns.
 func LoadDictionary(dir string) (*Dictionary, error) {
 	manifestPath := filepath.Join(dir, "manifest.yaml")
 	manifest, err := LoadManifest(manifestPath)
@@ -35,11 +40,43 @@ func LoadDictionary(dir string) (*Dictionary, error) {
 		normalize: GetNormalizer(manifest.Format.Normalize),
 	}
 
+	// Pattern-based dictionaries: compile regexes, no data file.
+	if manifest.Method == "pattern" {
+		pm, err := compilePatterns(manifest.Patterns)
+		if err != nil {
+			return nil, fmt.Errorf("dict %s: %w", manifest.ID, err)
+		}
+		d.patterns = pm
+		return d, nil
+	}
+
+	// Gob takes priority over CSV.
+	gobPath := filepath.Join(dir, "data.gob")
+	if _, err := os.Stat(gobPath); err == nil {
+		if err := d.loadGob(gobPath); err != nil {
+			return nil, fmt.Errorf("dict %s: %w", manifest.ID, err)
+		}
+		return d, nil
+	}
+
+	// Fallback: CSV (original behaviour).
 	dataPath := filepath.Join(dir, manifest.DataFile)
 	if err := d.loadCSV(dataPath); err != nil {
 		return nil, fmt.Errorf("dict %s: %w", manifest.ID, err)
 	}
 	return d, nil
+}
+
+// Classify matches a term against patterns or falls back to lookup.
+func (d *Dictionary) Classify(term string) (*Entry, bool) {
+	if d.patterns != nil {
+		name, ok := d.patterns.match(term)
+		if !ok {
+			return nil, false
+		}
+		return &Entry{Metadata: map[string]string{"pattern": name}}, true
+	}
+	return d.Lookup(term)
 }
 
 func (d *Dictionary) loadCSV(path string) error {
@@ -49,7 +86,17 @@ func (d *Dictionary) loadCSV(path string) error {
 	}
 	defer f.Close()
 
-	r := csv.NewReader(f)
+	// Transcode non-UTF-8 encodings declared in the manifest.
+	var reader io.Reader = f
+	if enc := d.Manifest.Format.Encoding; enc != "" && !isUTF8(enc) {
+		e, err := htmlindex.Get(enc)
+		if err != nil {
+			return fmt.Errorf("unsupported encoding %q: %w", enc, err)
+		}
+		reader = transform.NewReader(f, e.NewDecoder())
+	}
+
+	r := csv.NewReader(reader)
 
 	if delim := d.Manifest.Format.Delimiter; delim != "" {
 		r.Comma = []rune(delim)[0]
@@ -99,6 +146,7 @@ func (d *Dictionary) loadCSV(path string) error {
 	}
 
 	// Read all rows into the hashmap.
+	var collisions int
 	for {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -125,7 +173,14 @@ func (d *Dictionary) loadCSV(path string) error {
 				}
 			}
 		}
+		if _, exists := d.Entries[key]; exists {
+			collisions++
+		}
 		d.Entries[key] = entry
+	}
+
+	if collisions > 0 {
+		slog.Warn("key collisions after normalization", "dict", d.Manifest.ID, "collisions", collisions)
 	}
 
 	return nil
@@ -140,4 +195,9 @@ func (d *Dictionary) Lookup(term string) (*Entry, bool) {
 // NormalizeTerm applies this dictionary's normalizer to a term.
 func (d *Dictionary) NormalizeTerm(term string) string {
 	return d.normalize(term)
+}
+
+func isUTF8(enc string) bool {
+	e := strings.ToLower(strings.ReplaceAll(enc, "-", ""))
+	return e == "utf8" || e == ""
 }

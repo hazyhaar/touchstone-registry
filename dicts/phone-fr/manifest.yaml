@@ -1,0 +1,14 @@
+id: phone-fr
+version: "2026-02"
+jurisdiction: fr
+entity_type: phone
+source: "ARCEP numbering plan"
+license: CC0
+method: pattern
+patterns:
+  - name: mobile_fr
+    regex: "^(\\+33|0033|0)[67]\\d{8}$"
+  - name: fixe_fr
+    regex: "^(\\+33|0033|0)[1-5]\\d{8}$"
+  - name: special_fr
+    regex: "^(\\+33|0033|0)[89]\\d{8}$"

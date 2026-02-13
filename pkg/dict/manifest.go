@@ -17,8 +17,17 @@ type Manifest struct {
 	SourceURL    string           `yaml:"source_url" json:"source_url,omitempty"`
 	License      string           `yaml:"license" json:"license"`
 	DataFile     string           `yaml:"data_file" json:"data_file"`
+	Method       string           `yaml:"method" json:"method,omitempty"`
 	Format       FormatSpec       `yaml:"format" json:"-"`
 	MetadataCols []MetadataColumn `yaml:"metadata_columns" json:"-"`
+	Patterns     []PatternSpec    `yaml:"patterns" json:"patterns,omitempty"`
+}
+
+// PatternSpec defines a regex pattern with an optional checksum validator.
+type PatternSpec struct {
+	Name      string `yaml:"name" json:"name"`
+	Regex     string `yaml:"regex" json:"regex"`
+	Validator string `yaml:"validator,omitempty" json:"validator,omitempty"`
 }
 
 // FormatSpec describes the CSV layout.
