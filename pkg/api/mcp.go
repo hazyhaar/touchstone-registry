@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
-	"github.com/hazyhaar/touchstone-registry/pkg/kit"
+	"github.com/hazyhaar/pkg/kit"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )

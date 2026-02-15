@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hazyhaar/touchstone-registry/pkg/api"
-	"github.com/hazyhaar/touchstone-registry/pkg/chassis"
+	"github.com/hazyhaar/pkg/chassis"
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
 	"github.com/hazyhaar/touchstone-registry/pkg/importer"
 	"github.com/mark3labs/mcp-go/server"

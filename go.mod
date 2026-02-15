@@ -3,8 +3,8 @@ module github.com/hazyhaar/touchstone-registry
 go 1.24.7
 
 require (
-	github.com/mark3labs/mcp-go v0.43.2
-	github.com/quic-go/quic-go v0.59.0
+	github.com/hazyhaar/pkg v0.0.0-20260215155643-975e9bdd627b
+	github.com/mark3labs/mcp-go v0.44.0
 	golang.org/x/text v0.28.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.45.0
@@ -20,6 +20,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
+	github.com/quic-go/quic-go v0.59.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect

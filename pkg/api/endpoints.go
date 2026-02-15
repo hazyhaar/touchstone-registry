@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
-	"github.com/hazyhaar/touchstone-registry/pkg/kit"
+	"github.com/hazyhaar/pkg/kit"
 )
 
 // Shared request/response types used by both HTTP and MCP transports.

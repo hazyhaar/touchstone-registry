@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
-	"github.com/hazyhaar/touchstone-registry/pkg/kit"
+	"github.com/hazyhaar/pkg/kit"
 )
 
 // NewRouter returns an http.Handler with all Touchstone API routes.
