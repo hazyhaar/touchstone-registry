@@ -1,5 +1,7 @@
 # CLAUDE.md — touchstone-registry
 
+> **Règle n°1** — Un bug trouvé en audit mais pas par un test est d'abord une faille de test. Écrire le test rouge, puis fixer. Pas de fix sans test.
+
 ## Ce que c'est
 
 Registre linguistique et outil d'audit par dictionnaires. Valide du contenu textuel contre des dictionnaires spécialisés (14 catégories). Utilisé pour la conformité et la qualité linguistique.
