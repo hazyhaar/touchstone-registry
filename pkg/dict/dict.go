@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Core Dictionary type that loads entries from gob/CSV/patterns and performs normalized term lookup.
 package dict
 
 import (

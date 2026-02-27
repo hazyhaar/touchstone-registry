@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Regex pattern matcher with checksum validators (IBAN mod97, Luhn, French NIR) for pattern-based dictionaries.
 package dict
 
 import (

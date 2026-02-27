@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Import adapter for INSEE COG French communes with department and code metadata.
 package importer
 
 import (

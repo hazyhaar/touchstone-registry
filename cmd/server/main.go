@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Entry point dispatching serve/import subcommands, wiring HTTP+MCP server with dictionary registry and graceful shutdown.
 package main
 
 import (
@@ -15,7 +16,7 @@ import (
 	"github.com/hazyhaar/pkg/chassis"
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
 	"github.com/hazyhaar/touchstone-registry/pkg/importer"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"gopkg.in/yaml.v3"
 )
 
@@ -81,7 +82,7 @@ func cmdServe(args []string) {
 	router := api.NewRouter(reg)
 
 	// MCP server with Touchstone tools.
-	mcpSrv := server.NewMCPServer("touchstone", "0.1.0")
+	mcpSrv := mcp.NewServer(&mcp.Implementation{Name: "touchstone", Version: "0.1.0"}, nil)
 	api.RegisterMCPTools(mcpSrv, reg)
 
 	// Chassis: dual-transport (TCP+QUIC) with TLS, security headers, MCP.

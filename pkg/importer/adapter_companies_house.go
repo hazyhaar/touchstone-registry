@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Import adapter for UK Companies House active company names from their bulk CSV download.
 package importer
 
 import (

@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Adapter interface and global registry for data source importers that build dictionary gob files.
 package importer
 
 import (

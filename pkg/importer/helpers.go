@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Shared import utilities: HTTP download with retries, ZIP extraction, manifest YAML writer, directory helpers.
 package importer
 
 import (

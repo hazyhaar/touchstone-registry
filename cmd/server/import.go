@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY CLI subcommand that downloads and builds dictionaries from public data sources via import adapters.
 package main
 
 import (

@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Text normalization strategies (lowercase+strip-accents, lowercase-only, none) for dictionary term matching.
 package dict
 
 import (

@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Import adapter for US Census Bureau 2010 surnames with rank and frequency metadata.
 package importer
 
 import (

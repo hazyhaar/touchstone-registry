@@ -1,35 +1,39 @@
+// CLAUDE:SUMMARY MCP tool registration exposing classify_term, classify_batch, and list_dicts as MCP-over-QUIC tools.
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
 	"github.com/hazyhaar/pkg/kit"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // RegisterMCPTools registers the three Touchstone MCP tools on the server.
-func RegisterMCPTools(srv *server.MCPServer, reg *dict.Registry) {
+func RegisterMCPTools(srv *mcp.Server, reg *dict.Registry) {
 	registerMCPClassifyTerm(srv, reg)
 	registerMCPClassifyBatch(srv, reg)
 	registerMCPListDicts(srv, reg)
 }
 
-func registerMCPClassifyTerm(srv *server.MCPServer, reg *dict.Registry) {
-	tool := mcp.NewTool("classify_term",
-		mcp.WithDescription("Classify a single term against public data registries (surnames, first names, companies, cities, street types)."),
-		mcp.WithString("term", mcp.Required(), mcp.Description("The term to classify")),
-		mcp.WithString("jurisdictions", mcp.Description("Comma-separated jurisdiction filter (e.g. fr,uk)")),
-		mcp.WithString("types", mcp.Description("Comma-separated entity type filter (e.g. surname,first_name)")),
-		mcp.WithString("dicts", mcp.Description("Comma-separated dictionary filter (e.g. patronymes-fr)")),
+func registerMCPClassifyTerm(srv *mcp.Server, reg *dict.Registry) {
+	tool := mcpTool("classify_term",
+		"Classify a single term against public data registries (surnames, first names, companies, cities, street types).",
+		map[string]any{
+			"term":          map[string]string{"type": "string", "description": "The term to classify"},
+			"jurisdictions": map[string]string{"type": "string", "description": "Comma-separated jurisdiction filter (e.g. fr,uk)"},
+			"types":         map[string]string{"type": "string", "description": "Comma-separated entity type filter (e.g. surname,first_name)"},
+			"dicts":         map[string]string{"type": "string", "description": "Comma-separated dictionary filter (e.g. patronymes-fr)"},
+		},
+		[]string{"term"},
 	)
 
 	endpoint := classifyTermEndpoint(reg)
 
-	kit.RegisterMCPTool(srv, tool, endpoint, func(req mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
-		args := req.GetArguments()
+	kit.RegisterMCPTool(srv, tool, endpoint, func(req *mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
+		args := parseArgs(req)
 		term, _ := args["term"].(string)
 		return &kit.MCPDecodeResult{Request: &classifyTermReq{
 			Term: term,
@@ -38,19 +42,22 @@ func registerMCPClassifyTerm(srv *server.MCPServer, reg *dict.Registry) {
 	})
 }
 
-func registerMCPClassifyBatch(srv *server.MCPServer, reg *dict.Registry) {
-	tool := mcp.NewTool("classify_batch",
-		mcp.WithDescription("Classify multiple terms (up to 100) against public data registries."),
-		mcp.WithString("terms", mcp.Required(), mcp.Description("Comma-separated list of terms to classify (max 100)")),
-		mcp.WithString("jurisdictions", mcp.Description("Comma-separated jurisdiction filter")),
-		mcp.WithString("types", mcp.Description("Comma-separated entity type filter")),
-		mcp.WithString("dicts", mcp.Description("Comma-separated dictionary filter (e.g. patronymes-fr)")),
+func registerMCPClassifyBatch(srv *mcp.Server, reg *dict.Registry) {
+	tool := mcpTool("classify_batch",
+		"Classify multiple terms (up to 100) against public data registries.",
+		map[string]any{
+			"terms":         map[string]string{"type": "string", "description": "Comma-separated list of terms to classify (max 100)"},
+			"jurisdictions": map[string]string{"type": "string", "description": "Comma-separated jurisdiction filter"},
+			"types":         map[string]string{"type": "string", "description": "Comma-separated entity type filter"},
+			"dicts":         map[string]string{"type": "string", "description": "Comma-separated dictionary filter (e.g. patronymes-fr)"},
+		},
+		[]string{"terms"},
 	)
 
 	endpoint := classifyBatchEndpoint(reg)
 
-	kit.RegisterMCPTool(srv, tool, endpoint, func(req mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
-		args := req.GetArguments()
+	kit.RegisterMCPTool(srv, tool, endpoint, func(req *mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
+		args := parseArgs(req)
 		termsStr, _ := args["terms"].(string)
 		terms := strings.Split(termsStr, ",")
 		for i := range terms {
@@ -66,16 +73,49 @@ func registerMCPClassifyBatch(srv *server.MCPServer, reg *dict.Registry) {
 	})
 }
 
-func registerMCPListDicts(srv *server.MCPServer, reg *dict.Registry) {
-	tool := mcp.NewTool("list_dicts",
-		mcp.WithDescription("List all loaded dictionaries with metadata (jurisdiction, entity type, entry count, source)."),
+func registerMCPListDicts(srv *mcp.Server, reg *dict.Registry) {
+	tool := mcpTool("list_dicts",
+		"List all loaded dictionaries with metadata (jurisdiction, entity type, entry count, source).",
+		nil,
+		nil,
 	)
 
 	endpoint := listDictsEndpoint(reg)
 
-	kit.RegisterMCPTool(srv, tool, endpoint, func(_ mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
+	kit.RegisterMCPTool(srv, tool, endpoint, func(_ *mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
 		return &kit.MCPDecodeResult{Request: nil}, nil
 	})
+}
+
+// mcpTool builds an *mcp.Tool with a JSON Schema input schema.
+func mcpTool(name, description string, properties map[string]any, required []string) *mcp.Tool {
+	schema := map[string]any{
+		"type": "object",
+	}
+	if properties != nil {
+		schema["properties"] = properties
+	}
+	if len(required) > 0 {
+		schema["required"] = required
+	}
+	raw, _ := json.Marshal(schema)
+	return &mcp.Tool{
+		Name:        name,
+		Description: description,
+		InputSchema: json.RawMessage(raw),
+	}
+}
+
+// parseArgs extracts the arguments map from a CallToolRequest.
+func parseArgs(req *mcp.CallToolRequest) map[string]any {
+	var args map[string]any
+	if req.Params != nil && req.Params.Arguments != nil {
+		json.Unmarshal(req.Params.Arguments, &args)
+	}
+	if args == nil {
+		args = make(map[string]any)
+	}
+	return args
 }
 
 // parseMCPOpts extracts ClassifyOptions from MCP tool arguments.

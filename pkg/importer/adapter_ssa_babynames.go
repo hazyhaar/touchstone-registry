@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Import adapter for SSA baby names (US first names) aggregated across all yearly files.
 package importer
 
 import (

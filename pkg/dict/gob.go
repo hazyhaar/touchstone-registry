@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Gob serialization and deserialization of dictionary entry hashmaps for fast loading.
 package dict
 
 import (

@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Import adapter for French SIRENE company registry filtering active legal entities with SIREN numbers.
 package importer
 
 import (

@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Import adapter for INSEE French surnames (patronymes) from tab-delimited national file.
 package importer
 
 import (

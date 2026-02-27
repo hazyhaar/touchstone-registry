@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY SQLite-backed store for import source URLs, availability check results, and adapter metadata.
 package importer
 
 import (

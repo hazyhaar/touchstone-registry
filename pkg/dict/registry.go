@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Thread-safe registry that loads all dictionaries from disk and serves cross-dictionary classification queries.
 package dict
 
 import (

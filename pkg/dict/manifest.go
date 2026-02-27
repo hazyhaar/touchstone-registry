@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Manifest YAML schema defining dictionary metadata, CSV format spec, and pattern definitions.
 package dict
 
 import (

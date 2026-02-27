@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Transport-agnostic kit.Endpoint functions for classify-term, classify-batch, and list-dicts operations.
 package api
 
 import (

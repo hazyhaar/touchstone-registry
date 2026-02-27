@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Periodic availability checker that HEAD-requests all import source URLs and persists status to SQLite.
 package importer
 
 import (

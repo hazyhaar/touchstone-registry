@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY Import adapter for INSEE French first names aggregated by frequency across years.
 package importer
 
 import (

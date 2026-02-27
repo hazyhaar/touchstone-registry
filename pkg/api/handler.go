@@ -1,3 +1,4 @@
+// CLAUDE:SUMMARY HTTP handler and router for the Touchstone REST API (classify, batch, dicts, health) with CORS middleware.
 package api
 
 import (
