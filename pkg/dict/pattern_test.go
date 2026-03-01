@@ -237,7 +237,9 @@ func TestPatternMatcher_UnknownValidator(t *testing.T) {
 func TestDictionary_Classify_Pattern(t *testing.T) {
 	dir := t.TempDir()
 	dictDir := filepath.Join(dir, "email-test")
-	os.MkdirAll(dictDir, 0o755)
+	if err := os.MkdirAll(dictDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	manifest := `id: email-test
 version: "1.0"
@@ -249,7 +251,9 @@ patterns:
   - name: email
     regex: "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"
 `
-	os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644)
+	if err := os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	d, err := LoadDictionary(dictDir)
 	if err != nil {
@@ -293,8 +297,10 @@ func TestRegistry_Classify_Pattern(t *testing.T) {
 
 	// Pattern dict
 	pd := filepath.Join(dir, "email")
-	os.MkdirAll(pd, 0o755)
-	os.WriteFile(filepath.Join(pd, "manifest.yaml"), []byte(`id: email
+	if err := os.MkdirAll(pd, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pd, "manifest.yaml"), []byte(`id: email
 version: "1.0"
 jurisdiction: intl
 entity_type: email
@@ -303,12 +309,16 @@ method: pattern
 patterns:
   - name: email
     regex: "^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$"
-`), 0o644)
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Lookup dict
 	ld := filepath.Join(dir, "noms-fr")
-	os.MkdirAll(ld, 0o755)
-	os.WriteFile(filepath.Join(ld, "manifest.yaml"), []byte(`id: noms-fr
+	if err := os.MkdirAll(ld, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ld, "manifest.yaml"), []byte(`id: noms-fr
 version: "1.0"
 jurisdiction: fr
 entity_type: surname
@@ -319,8 +329,12 @@ format:
   has_header: true
   key_column: "term"
   normalize: lowercase_ascii
-`), 0o644)
-	os.WriteFile(filepath.Join(ld, "data.csv"), []byte("term\nDUPONT\n"), 0o644)
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ld, "data.csv"), []byte("term\nDUPONT\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	reg := NewRegistry(dir)
 	if err := reg.Load(); err != nil {

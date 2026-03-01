@@ -134,7 +134,9 @@ patterns:
   - name: email
     regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
 `
-	os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644)
+	if err := os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	d, err := LoadDictionary(dictDir)
 	if err != nil {
