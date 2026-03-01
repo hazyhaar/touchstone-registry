@@ -11,7 +11,9 @@ func writeTestDict(t *testing.T, id, normalize string, csvContent string) string
 	t.Helper()
 	dir := t.TempDir()
 	dictDir := filepath.Join(dir, id)
-	os.MkdirAll(dictDir, 0o755)
+	if err := os.MkdirAll(dictDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	manifest := `id: ` + id + `
 version: "1.0"
@@ -29,8 +31,12 @@ metadata_columns:
   - name: freq
     column: "frequency"
 `
-	os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644)
-	os.WriteFile(filepath.Join(dictDir, "data.csv"), []byte(csvContent), 0o644)
+	if err := os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dictDir, "data.csv"), []byte(csvContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	return dir
 }
 
@@ -94,7 +100,9 @@ func TestLoadDictionary_EmptyKeys(t *testing.T) {
 func TestLoadDictionary_MissingKeyColumn(t *testing.T) {
 	dir := t.TempDir()
 	dictDir := filepath.Join(dir, "bad")
-	os.MkdirAll(dictDir, 0o755)
+	if err := os.MkdirAll(dictDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	manifest := `id: bad
 version: "1.0"
@@ -107,8 +115,12 @@ format:
   has_header: true
   key_column: "nonexistent"
 `
-	os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644)
-	os.WriteFile(filepath.Join(dictDir, "data.csv"), []byte("term;freq\na;1\n"), 0o644)
+	if err := os.WriteFile(filepath.Join(dictDir, "manifest.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dictDir, "data.csv"), []byte("term;freq\na;1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	_, err := LoadDictionary(dictDir)
 	if err == nil {

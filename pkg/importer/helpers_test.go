@@ -13,8 +13,8 @@ import (
 
 func TestDownloadFile(t *testing.T) {
 	content := "hello world"
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(content))
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(content))
 	}))
 	defer ts.Close()
 
@@ -34,13 +34,13 @@ func TestDownloadFile(t *testing.T) {
 
 func TestDownloadFile_Retry(t *testing.T) {
 	attempts := 0
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		attempts++
 		if attempts < 3 {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	}))
 	defer ts.Close()
 

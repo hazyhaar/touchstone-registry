@@ -119,7 +119,9 @@ func TestSaveGob_InvalidPath(t *testing.T) {
 func TestLoadDictionary_PatternMethod(t *testing.T) {
 	dir := t.TempDir()
 	dictDir := filepath.Join(dir, "pattern-dict")
-	os.MkdirAll(dictDir, 0o755)
+	if err := os.MkdirAll(dictDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Pattern method — no data file required.
 	manifest := `id: pattern-dict
