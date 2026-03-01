@@ -12,8 +12,10 @@ func setupRegistry(t *testing.T) (*Registry, string) {
 
 	// Dict 1: French surnames
 	d1 := filepath.Join(dir, "noms-fr")
-	os.MkdirAll(d1, 0o755)
-	os.WriteFile(filepath.Join(d1, "manifest.yaml"), []byte(`id: noms-fr
+	if err := os.MkdirAll(d1, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d1, "manifest.yaml"), []byte(`id: noms-fr
 version: "1.0"
 jurisdiction: fr
 entity_type: surname
@@ -27,13 +29,19 @@ format:
 metadata_columns:
   - name: freq
     column: "frequency"
-`), 0o644)
-	os.WriteFile(filepath.Join(d1, "data.csv"), []byte("term;frequency\nDUPONT;1200\nMartin;3500\nÉlodie;800\n"), 0o644)
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d1, "data.csv"), []byte("term;frequency\nDUPONT;1200\nMartin;3500\nÉlodie;800\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Dict 2: UK first names
 	d2 := filepath.Join(dir, "firstnames-uk")
-	os.MkdirAll(d2, 0o755)
-	os.WriteFile(filepath.Join(d2, "manifest.yaml"), []byte(`id: firstnames-uk
+	if err := os.MkdirAll(d2, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d2, "manifest.yaml"), []byte(`id: firstnames-uk
 version: "1.0"
 jurisdiction: uk
 entity_type: first_name
@@ -44,8 +52,12 @@ format:
   has_header: true
   key_column: "term"
   normalize: lowercase_ascii
-`), 0o644)
-	os.WriteFile(filepath.Join(d2, "data.csv"), []byte("term\nJames\nEmma\nMartin\n"), 0o644)
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d2, "data.csv"), []byte("term\nJames\nEmma\nMartin\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	reg := NewRegistry(dir)
 	if err := reg.Load(); err != nil {
@@ -195,8 +207,10 @@ func TestReload(t *testing.T) {
 
 	// Add a third dict
 	d3 := filepath.Join(dir, "villes-fr")
-	os.MkdirAll(d3, 0o755)
-	os.WriteFile(filepath.Join(d3, "manifest.yaml"), []byte(`id: villes-fr
+	if err := os.MkdirAll(d3, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d3, "manifest.yaml"), []byte(`id: villes-fr
 version: "1.0"
 jurisdiction: fr
 entity_type: city
@@ -207,8 +221,12 @@ format:
   has_header: true
   key_column: "term"
   normalize: lowercase_ascii
-`), 0o644)
-	os.WriteFile(filepath.Join(d3, "data.csv"), []byte("term\nParis\nLyon\n"), 0o644)
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d3, "data.csv"), []byte("term\nParis\nLyon\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := reg.Reload(); err != nil {
 		t.Fatalf("Reload: %v", err)
