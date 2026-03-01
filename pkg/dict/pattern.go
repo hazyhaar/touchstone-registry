@@ -77,11 +77,12 @@ func validateMod97(s string) bool {
 	// Convert letters to digits: A=10, B=11, ..., Z=35.
 	var digits strings.Builder
 	for _, c := range strings.ToUpper(rearranged) {
-		if c >= '0' && c <= '9' {
+		switch {
+		case c >= '0' && c <= '9':
 			digits.WriteRune(c)
-		} else if c >= 'A' && c <= 'Z' {
+		case c >= 'A' && c <= 'Z':
 			fmt.Fprintf(&digits, "%d", c-'A'+10)
-		} else {
+		default:
 			return false
 		}
 	}

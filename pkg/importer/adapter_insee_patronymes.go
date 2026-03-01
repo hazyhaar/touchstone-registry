@@ -148,7 +148,7 @@ func parseINSEEPatronymes(path string) (map[string]*dict.Entry, error) {
 
 		var nombre int
 		if nombreCol >= 0 && nombreCol < len(record) {
-			fmt.Sscanf(strings.TrimSpace(record[nombreCol]), "%d", &nombre)
+			_, _ = fmt.Sscanf(strings.TrimSpace(record[nombreCol]), "%d", &nombre)
 		}
 
 		if existing, ok := aggregated[key]; ok {

@@ -35,7 +35,7 @@ func TestSaveGobLoadGobRoundTrip(t *testing.T) {
 	if d.Entries["martin"].Metadata["freq"] != "3500" {
 		t.Errorf("martin freq = %q, want 3500", d.Entries["martin"].Metadata["freq"])
 	}
-	if d.Entries["empty"].Metadata != nil && len(d.Entries["empty"].Metadata) != 0 {
+	if len(d.Entries["empty"].Metadata) != 0 {
 		t.Errorf("empty metadata should be nil or empty, got %v", d.Entries["empty"].Metadata)
 	}
 }

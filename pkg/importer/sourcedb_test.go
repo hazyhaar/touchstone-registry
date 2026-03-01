@@ -42,8 +42,8 @@ func TestOpenSourceDB_CreatesTable(t *testing.T) {
 	}
 	defer sdb.Close()
 
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("db file not created: %v", err)
+	if _, statErr := os.Stat(path); statErr != nil {
+		t.Fatalf("db file not created: %v", statErr)
 	}
 
 	// Verify the table exists by listing (should return empty).
@@ -80,8 +80,8 @@ func TestSeedAndGetURL(t *testing.T) {
 	modified := []Adapter{
 		&fakeAdapter{"a1", "d1", "desc1", "https://changed.com/a1", "CC0"},
 	}
-	if err := sdb.Seed(modified); err != nil {
-		t.Fatalf("Seed again: %v", err)
+	if seedErr := sdb.Seed(modified); seedErr != nil {
+		t.Fatalf("Seed again: %v", seedErr)
 	}
 
 	url, err = sdb.GetURL("a1")

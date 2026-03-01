@@ -51,7 +51,7 @@ func usage() {
 func cmdServe(args []string) {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
 	cfgPath := fs.String("config", "config.yaml", "path to config file")
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
@@ -63,9 +63,50 @@ func cmdServe(args []string) {
 		logger.Error("failed to open sources database", "error", err)
 		os.Exit(1)
 	}
+
+	reg, srv, checker := initServer(sdb, cfg, logger)
+
+	// SIGHUP: hot reload dictionaries.
+	// SIGINT/SIGTERM: graceful shutdown.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 	defer sdb.Close()
 
+	sighup := make(chan os.Signal, 1)
+	signal.Notify(sighup, syscall.SIGHUP)
+	go func() {
+		for range sighup {
+			logger.Info("SIGHUP received, reloading dictionaries")
+			if reloadErr := reg.Reload(); reloadErr != nil {
+				logger.Error("reload failed", "error", reloadErr)
+			} else {
+				logger.Info("dictionaries reloaded", "count", reg.DictCount(), "entries", reg.TotalEntries())
+			}
+		}
+	}()
+
+	go checker.Start(ctx)
+
+	// Start chassis (TCP + QUIC).
+	go func() {
+		if startErr := srv.Start(ctx); startErr != nil {
+			logger.Error("chassis error", "error", startErr)
+			os.Exit(1)
+		}
+	}()
+
+	<-ctx.Done()
+	logger.Info("shutting down")
+	shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if stopErr := srv.Stop(shutCtx); stopErr != nil {
+		logger.Error("shutdown error", "error", stopErr)
+	}
+}
+
+func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) (*dict.Registry, *chassis.Server, *importer.Checker) {
 	if err := sdb.Seed(importer.All()); err != nil {
+		sdb.Close()
 		logger.Error("failed to seed import sources", "error", err)
 		os.Exit(1)
 	}
@@ -73,6 +114,7 @@ func cmdServe(args []string) {
 	// Load dictionaries.
 	reg := dict.NewRegistry(cfg.DictsDir)
 	if err := reg.Load(); err != nil {
+		sdb.Close()
 		logger.Error("failed to load dictionaries", "error", err)
 		os.Exit(1)
 	}
@@ -95,48 +137,15 @@ func cmdServe(args []string) {
 		Logger:    logger,
 	})
 	if err != nil {
+		sdb.Close()
 		logger.Error("chassis init failed", "error", err)
 		os.Exit(1)
 	}
 
-	// Start source availability checker (every 24h).
+	// Source availability checker (every 24h).
 	checker := importer.NewChecker(sdb, logger, 24*time.Hour)
 
-	// SIGHUP: hot reload dictionaries.
-	// SIGINT/SIGTERM: graceful shutdown.
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	sighup := make(chan os.Signal, 1)
-	signal.Notify(sighup, syscall.SIGHUP)
-	go func() {
-		for range sighup {
-			logger.Info("SIGHUP received, reloading dictionaries")
-			if err := reg.Reload(); err != nil {
-				logger.Error("reload failed", "error", err)
-			} else {
-				logger.Info("dictionaries reloaded", "count", reg.DictCount(), "entries", reg.TotalEntries())
-			}
-		}
-	}()
-
-	go checker.Start(ctx)
-
-	// Start chassis (TCP + QUIC).
-	go func() {
-		if err := srv.Start(ctx); err != nil {
-			logger.Error("chassis error", "error", err)
-			os.Exit(1)
-		}
-	}()
-
-	<-ctx.Done()
-	logger.Info("shutting down")
-	shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := srv.Stop(shutCtx); err != nil {
-		logger.Error("shutdown error", "error", err)
-	}
+	return reg, srv, checker
 }
 
 func loadConfig(path string, logger *slog.Logger) config {

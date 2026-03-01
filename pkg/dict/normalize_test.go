@@ -59,7 +59,7 @@ func TestGetNormalizer(t *testing.T) {
 		{"lowercase_utf8", "Élodie", "élodie"},
 		{"none", "Élodie", "Élodie"},
 		{"", "Élodie", "elodie"},             // default = lowercase_ascii
-		{"unknown_mode", "Élodie", "elodie"}, // fallback = lowercase_ascii
+		{"unknown_mode", "Élodie", "elodie"}, // fallback to lowercase_ascii
 	}
 	for _, tt := range tests {
 		fn := GetNormalizer(tt.mode)

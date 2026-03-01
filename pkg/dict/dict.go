@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"unicode/utf8"
 	"path/filepath"
 	"strings"
 
@@ -90,9 +91,9 @@ func (d *Dictionary) loadCSV(path string) error {
 	// Transcode non-UTF-8 encodings declared in the manifest.
 	var reader io.Reader = f
 	if enc := d.Manifest.Format.Encoding; enc != "" && !isUTF8(enc) {
-		e, err := htmlindex.Get(enc)
-		if err != nil {
-			return fmt.Errorf("unsupported encoding %q: %w", enc, err)
+		e, encErr := htmlindex.Get(enc)
+		if encErr != nil {
+			return fmt.Errorf("unsupported encoding %q: %w", enc, encErr)
 		}
 		reader = transform.NewReader(f, e.NewDecoder())
 	}
@@ -100,7 +101,7 @@ func (d *Dictionary) loadCSV(path string) error {
 	r := csv.NewReader(reader)
 
 	if delim := d.Manifest.Format.Delimiter; delim != "" {
-		r.Comma = []rune(delim)[0]
+		r.Comma, _ = utf8.DecodeRuneInString(delim)
 	}
 	r.LazyQuotes = true
 	r.TrimLeadingSpace = true
@@ -136,12 +137,10 @@ func (d *Dictionary) loadCSV(path string) error {
 	// Resolve metadata column indices.
 	metaIdx := make(map[string]int)
 	for _, mc := range d.Manifest.MetadataCols {
-		if header != nil {
-			for i, h := range header {
-				if h == mc.Column {
-					metaIdx[mc.Name] = i
-					break
-				}
+		for i, h := range header {
+			if h == mc.Column {
+				metaIdx[mc.Name] = i
+				break
 			}
 		}
 	}

@@ -42,8 +42,8 @@ func TestCheckAll_Mixed(t *testing.T) {
 		&fakeAdapter{"notfound-source", "d2", "404 source", srv404.URL, "CC0"},
 		&fakeAdapter{"error-source", "d3", "500 source", srv500.URL, "CC0"},
 	}
-	if err := sdb.Seed(adapters); err != nil {
-		t.Fatalf("Seed: %v", err)
+	if seedErr := sdb.Seed(adapters); seedErr != nil {
+		t.Fatalf("Seed: %v", seedErr)
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))

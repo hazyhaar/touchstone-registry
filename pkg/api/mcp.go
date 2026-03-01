@@ -110,7 +110,7 @@ func mcpTool(name, description string, properties map[string]any, required []str
 func parseArgs(req *mcp.CallToolRequest) map[string]any {
 	var args map[string]any
 	if req.Params != nil && req.Params.Arguments != nil {
-		json.Unmarshal(req.Params.Arguments, &args)
+		_ = json.Unmarshal(req.Params.Arguments, &args)
 	}
 	if args == nil {
 		args = make(map[string]any)

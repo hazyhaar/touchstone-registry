@@ -17,7 +17,7 @@ func cmdImport(args []string) {
 	source := fs.String("source", "", "adapter ID to import (e.g. insee-prenoms-fr)")
 	all := fs.Bool("all", false, "import all available sources")
 	outputDir := fs.String("output-dir", "dicts", "output directory for dictionaries")
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	// Open source DB and seed defaults.
 	sourcesDBPath := filepath.Join(*outputDir, "sources.db")
@@ -26,14 +26,21 @@ func cmdImport(args []string) {
 		fmt.Fprintf(os.Stderr, "Erreur ouverture sources.db: %v\n", err)
 		os.Exit(1)
 	}
-	defer sdb.Close()
 
-	if err := sdb.Seed(importer.All()); err != nil {
-		fmt.Fprintf(os.Stderr, "Erreur seed sources: %v\n", err)
+	if runErr := runImport(sdb, *all, *source, *outputDir); runErr != nil {
+		sdb.Close()
+		fmt.Fprintf(os.Stderr, "%v\n", runErr)
 		os.Exit(1)
 	}
+	sdb.Close()
+}
 
-	if !*all && *source == "" {
+func runImport(sdb *importer.SourceDB, all bool, source, outputDir string) error {
+	if err := sdb.Seed(importer.All()); err != nil {
+		return fmt.Errorf("Erreur seed sources: %w", err)
+	}
+
+	if !all && source == "" {
 		fmt.Println("Sources disponibles :")
 		fmt.Println()
 		sources, _ := sdb.ListSources()
@@ -48,49 +55,48 @@ func cmdImport(args []string) {
 		fmt.Println("Usage :")
 		fmt.Println("  touchstone import --source <id> [--output-dir <dir>]")
 		fmt.Println("  touchstone import --all [--output-dir <dir>]")
-		return
+		return nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 	defer cancel()
 
-	if *all {
+	if all {
 		for _, a := range importer.All() {
-			url, err := sdb.GetURL(a.ID())
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "[%s] ERREUR (URL): %v\n", a.ID(), err)
+			url, urlErr := sdb.GetURL(a.ID())
+			if urlErr != nil {
+				fmt.Fprintf(os.Stderr, "[%s] ERREUR (URL): %v\n", a.ID(), urlErr)
 				continue
 			}
 			fmt.Printf("[%s] Import en cours...\n", a.ID())
-			if err := a.Import(ctx, url, *outputDir); err != nil {
-				fmt.Fprintf(os.Stderr, "[%s] ERREUR: %v\n", a.ID(), err)
+			if importErr := a.Import(ctx, url, outputDir); importErr != nil {
+				fmt.Fprintf(os.Stderr, "[%s] ERREUR: %v\n", a.ID(), importErr)
 				continue
 			}
 			fmt.Printf("[%s] OK\n", a.ID())
 		}
-		return
+		return nil
 	}
 
-	a, err := importer.Get(*source)
+	a, err := importer.Get(source)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Erreur: %v\n", err)
 		fmt.Println("\nSources disponibles :")
-		for _, a := range importer.All() {
-			fmt.Printf("  %s\n", a.ID())
+		for _, adapter := range importer.All() {
+			fmt.Printf("  %s\n", adapter.ID())
 		}
-		os.Exit(1)
+		return err
 	}
 
 	url, err := sdb.GetURL(a.ID())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] ERREUR (URL): %v\n", a.ID(), err)
-		os.Exit(1)
+		return fmt.Errorf("[%s] ERREUR (URL): %w", a.ID(), err)
 	}
 
 	fmt.Printf("[%s] Import en cours...\n", a.ID())
-	if err := a.Import(ctx, url, *outputDir); err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] ERREUR: %v\n", a.ID(), err)
-		os.Exit(1)
+	if err := a.Import(ctx, url, outputDir); err != nil {
+		return fmt.Errorf("[%s] ERREUR: %w", a.ID(), err)
 	}
-	fmt.Printf("[%s] OK -> %s/%s/\n", a.ID(), *outputDir, a.DictID())
+	fmt.Printf("[%s] OK -> %s/%s/\n", a.ID(), outputDir, a.DictID())
+	return nil
 }

@@ -71,7 +71,7 @@ func (a *ssaBabyNamesAdapter) Import(ctx context.Context, sourceURL, outputDir s
 			name := strings.TrimSpace(parts[0])
 			sex := strings.TrimSpace(parts[1])
 			var count int
-			fmt.Sscanf(strings.TrimSpace(parts[2]), "%d", &count)
+			_, _ = fmt.Sscanf(strings.TrimSpace(parts[2]), "%d", &count)
 
 			key := dict.NormalizeLowercaseASCII(name)
 			if existing, ok := aggregated[key]; ok {

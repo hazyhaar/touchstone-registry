@@ -77,7 +77,7 @@ func unzipFile(src, destDir string) ([]string, error) {
 	}
 	defer r.Close()
 
-	var paths []string
+	paths := make([]string, 0, len(r.File))
 	for _, f := range r.File {
 		if f.FileInfo().IsDir() {
 			continue
