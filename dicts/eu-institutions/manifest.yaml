@@ -1,0 +1,21 @@
+id: eu-institutions
+version: 2026-03
+jurisdiction: eu
+entity_type: institution
+source: EU institutions directory
+source_url: static://eu-institutions
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

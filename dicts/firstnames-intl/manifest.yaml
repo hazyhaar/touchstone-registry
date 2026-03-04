@@ -1,0 +1,21 @@
+id: firstnames-intl
+version: 2026-03
+jurisdiction: ""
+entity_type: firstname
+source: Global first names dataset
+source_url: https://raw.githubusercontent.com/sigpwned/popular-names-by-country-dataset/main/common-forenames-by-country.csv
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

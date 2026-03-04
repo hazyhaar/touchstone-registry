@@ -1,0 +1,21 @@
+id: meps-eu
+version: 2026-03
+jurisdiction: eu
+entity_type: politician
+source: European Parliament
+source_url: https://data.europarl.europa.eu/api/v2/meps?format=csv&offset=0&limit=800
+license: CC BY 4.0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

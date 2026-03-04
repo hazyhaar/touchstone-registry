@@ -1,0 +1,21 @@
+id: tld
+version: 2026-03
+jurisdiction: ""
+entity_type: tld
+source: IANA
+source_url: https://data.iana.org/TLD/tlds-alpha-by-domain.txt
+license: Public Domain
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

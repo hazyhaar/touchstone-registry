@@ -1,0 +1,21 @@
+id: legal-forms-fr
+version: 2026-03
+jurisdiction: fr
+entity_type: legal_form
+source: INSEE categories juridiques
+source_url: https://gist.githubusercontent.com/johanricher/de408d0ff610989d6c1f8146e37f668c/raw
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

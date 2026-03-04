@@ -1,8 +1,9 @@
-// CLAUDE:SUMMARY Shared import utilities: HTTP download with retries, ZIP extraction, manifest YAML writer, directory helpers.
+// CLAUDE:SUMMARY Shared import utilities: HTTP download with retries, ZIP/GZIP extraction, manifest YAML writer, directory helpers.
 package importer
 
 import (
 	"archive/zip"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -115,6 +116,32 @@ func writeManifest(dir string, m *dict.Manifest) error {
 		return fmt.Errorf("marshal manifest: %w", err)
 	}
 	return os.WriteFile(filepath.Join(dir, "manifest.yaml"), data, 0o644)
+}
+
+// gunzipFile decompresses a gzip file to dest.
+func gunzipFile(src, dest string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	gz, err := gzip.NewReader(in)
+	if err != nil {
+		return fmt.Errorf("gzip reader: %w", err)
+	}
+	defer gz.Close()
+
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, gz); err != nil {
+		return fmt.Errorf("decompress: %w", err)
+	}
+	return nil
 }
 
 // ensureDir creates a directory if it doesn't exist.

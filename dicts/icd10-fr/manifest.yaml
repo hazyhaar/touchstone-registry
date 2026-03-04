@@ -1,0 +1,21 @@
+id: icd10-fr
+version: 2026-03
+jurisdiction: fr
+entity_type: medical_code
+source: ATIH CIM-10
+source_url: https://raw.githubusercontent.com/gr0g/CMA/master/cim10.csv
+license: OMS / Public
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

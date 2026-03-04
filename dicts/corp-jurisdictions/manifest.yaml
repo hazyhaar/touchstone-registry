@@ -1,0 +1,21 @@
+id: corp-jurisdictions
+version: 2026-03
+jurisdiction: ""
+entity_type: jurisdiction
+source: Corporate registries compilation
+source_url: static://corp-jurisdictions
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

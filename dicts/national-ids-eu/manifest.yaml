@@ -1,0 +1,95 @@
+id: national-ids-eu
+version: "2026-03"
+jurisdiction: eu
+entity_type: national_id
+source: "GDPR Art. 87 — National identification numbers (EU27)"
+license: CC0
+method: pattern
+entity_spec:
+  sensitivity: high
+  pseudo_strategy: hash
+  pseudo_prefix: "NID-"
+patterns:
+  # France — NIR (numéro de sécurité sociale)
+  - name: nir_fr
+    regex: "^[12][0-9]{2}(0[1-9]|1[0-2])(0[1-9]|[1-9][0-9]|2[AB])[0-9]{3}[0-9]{3}[0-9]{2}$"
+    validator: nir
+  # Germany — Steueridentifikationsnummer (Tax ID)
+  - name: steuerid_de
+    regex: "^\\d{11}$"
+  # Spain — DNI
+  - name: dni_es
+    regex: "^\\d{8}[A-Z]$"
+  # Spain — NIE (foreigners)
+  - name: nie_es
+    regex: "^[XYZ]\\d{7}[A-Z]$"
+  # Italy — Codice Fiscale
+  - name: codice_fiscale_it
+    regex: "^[A-Z]{6}\\d{2}[A-Z]\\d{2}[A-Z]\\d{3}[A-Z]$"
+  # Netherlands — BSN (Burgerservicenummer)
+  - name: bsn_nl
+    regex: "^\\d{9}$"
+  # Belgium — NISS (Numéro national)
+  - name: niss_be
+    regex: "^\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{5}$"
+  # Poland — PESEL
+  - name: pesel_pl
+    regex: "^\\d{11}$"
+  # Sweden — Personnummer
+  - name: personnummer_se
+    regex: "^\\d{6}[-+]\\d{4}$"
+  # Portugal — NIF (Número de Identificação Fiscal)
+  - name: nif_pt
+    regex: "^[123578]\\d{8}$"
+  # Romania — CNP (Cod Numeric Personal)
+  - name: cnp_ro
+    regex: "^[1-8]\\d{12}$"
+  # Austria — Sozialversicherungsnummer
+  - name: svnr_at
+    regex: "^\\d{4}(0[1-9]|[12]\\d|3[01])(0[1-9]|1[0-2])\\d{2}$"
+  # Bulgaria — EGN (Edinen grazhdanski nomer)
+  - name: egn_bg
+    regex: "^\\d{10}$"
+  # Croatia — OIB (Osobni identifikacijski broj)
+  - name: oib_hr
+    regex: "^\\d{11}$"
+  # Czech Republic — Rodné číslo
+  - name: rodne_cislo_cz
+    regex: "^\\d{6}/\\d{3,4}$"
+  # Denmark — CPR (Central Person Register)
+  - name: cpr_dk
+    regex: "^(0[1-9]|[12]\\d|3[01])(0[1-9]|1[0-2])\\d{2}-?\\d{4}$"
+  # Estonia — Isikukood
+  - name: isikukood_ee
+    regex: "^[1-6]\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{4}$"
+  # Finland — Henkilötunnus (HETU)
+  - name: hetu_fi
+    regex: "^(0[1-9]|[12]\\d|3[01])(0[1-9]|1[0-2])\\d{2}[-+A]\\d{3}[A-Z0-9]$"
+  # Greece — AFM (Αριθμός Φορολογικού Μητρώου)
+  - name: afm_gr
+    regex: "^\\d{9}$"
+  # Hungary — Personal ID
+  - name: szemelyi_hu
+    regex: "^\\d{6}[A-Z]{2}$"
+  # Ireland — PPS (Personal Public Service)
+  - name: pps_ie
+    regex: "^\\d{7}[A-Z]{1,2}$"
+  # Latvia — Personas kods
+  - name: personas_kods_lv
+    regex: "^(0[1-9]|[12]\\d|3[01])(0[1-9]|1[0-2])\\d{2}-?\\d{5}$"
+  # Lithuania — Asmens kodas
+  - name: asmens_kodas_lt
+    regex: "^[3-6]\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{4}$"
+  # Luxembourg — National ID (matricule)
+  - name: matricule_lu
+    regex: "^\\d{4}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}$"
+  # Malta — ID Card
+  - name: idcard_mt
+    regex: "^\\d{7}[MGAPLHBZ]$"
+  # Slovakia — Rodné číslo
+  - name: rodne_cislo_sk
+    regex: "^\\d{6}/\\d{3,4}$"
+  # Slovenia — EMŠO
+  - name: emso_si
+    regex: "^(0[1-9]|[12]\\d|3[01])(0[1-9]|1[0-2])\\d{3}\\d{6}$"
+  # Cyprus — no national ID number format in common use

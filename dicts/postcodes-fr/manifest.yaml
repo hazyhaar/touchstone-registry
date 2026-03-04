@@ -1,0 +1,21 @@
+id: postcodes-fr
+version: 2026-03
+jurisdiction: fr
+entity_type: postcode
+source: La Poste (Datanova)
+source_url: https://datanova.laposte.fr/data-fair/api/v1/datasets/laposte-hexasmal/metadata-attachments/base-officielle-codes-postaux.csv
+license: Licence Ouverte v2
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

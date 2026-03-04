@@ -1,0 +1,21 @@
+id: atc-eu
+version: 2026-03
+jurisdiction: ""
+entity_type: drug_code
+source: WHO ATC/DDD
+source_url: https://raw.githubusercontent.com/fabkury/atcd/master/WHO%20ATC-DDD%202021-12-03.csv
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

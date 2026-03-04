@@ -1,0 +1,21 @@
+id: nuts-eu
+version: 2026-03
+jurisdiction: eu
+entity_type: region
+source: Eurostat NUTS
+source_url: https://gisco-services.ec.europa.eu/distribution/v2/nuts/csv/NUTS_AT_2024.csv
+license: CC BY 4.0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

@@ -1,0 +1,73 @@
+id: vat-eu
+version: "2026-03"
+jurisdiction: eu
+entity_type: vat_number
+source: "EU VAT number formats (Council Regulation 904/2010)"
+license: CC0
+method: pattern
+entity_spec:
+  sensitivity: financial
+  pseudo_strategy: hash
+  pseudo_prefix: "VAT-"
+patterns:
+  - name: vat_at
+    regex: "^ATU\\d{8}$"
+  - name: vat_be
+    regex: "^BE[01]\\d{9}$"
+  - name: vat_bg
+    regex: "^BG\\d{9,10}$"
+  - name: vat_hr
+    regex: "^HR\\d{11}$"
+  - name: vat_cy
+    regex: "^CY\\d{8}[A-Z]$"
+  - name: vat_cz
+    regex: "^CZ\\d{8,10}$"
+  - name: vat_dk
+    regex: "^DK\\d{8}$"
+  - name: vat_ee
+    regex: "^EE\\d{9}$"
+  - name: vat_fi
+    regex: "^FI\\d{8}$"
+  - name: vat_fr
+    regex: "^FR[A-Z0-9]{2}\\d{9}$"
+  - name: vat_de
+    regex: "^DE\\d{9}$"
+  - name: vat_gr
+    regex: "^(GR|EL)\\d{9}$"
+  - name: vat_hu
+    regex: "^HU\\d{8}$"
+  - name: vat_ie
+    regex: "^IE\\d[A-Z0-9+*]\\d{5}[A-Z]{1,2}$"
+  - name: vat_it
+    regex: "^IT\\d{11}$"
+  - name: vat_lv
+    regex: "^LV\\d{11}$"
+  - name: vat_lt
+    regex: "^LT(\\d{9}|\\d{12})$"
+  - name: vat_lu
+    regex: "^LU\\d{8}$"
+  - name: vat_mt
+    regex: "^MT\\d{8}$"
+  - name: vat_nl
+    regex: "^NL\\d{9}B\\d{2}$"
+  - name: vat_pl
+    regex: "^PL\\d{10}$"
+  - name: vat_pt
+    regex: "^PT\\d{9}$"
+  - name: vat_ro
+    regex: "^RO\\d{2,10}$"
+  - name: vat_sk
+    regex: "^SK\\d{10}$"
+  - name: vat_si
+    regex: "^SI\\d{8}$"
+  - name: vat_es
+    regex: "^ES[A-Z0-9]\\d{7}[A-Z0-9]$"
+  - name: vat_se
+    regex: "^SE\\d{12}$"
+  # Non-EU common
+  - name: vat_gb
+    regex: "^GB(\\d{9}|\\d{12}|GD\\d{3}|HA\\d{3})$"
+  - name: vat_ch
+    regex: "^CHE\\d{9}(MWST|TVA|IVA)$"
+  - name: vat_no
+    regex: "^NO\\d{9}MVA$"
