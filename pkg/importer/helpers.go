@@ -18,7 +18,7 @@ import (
 
 // downloadFile downloads url to dest with retries and timeout.
 func downloadFile(ctx context.Context, url, dest string) error {
-	client := &http.Client{Timeout: 10 * time.Minute}
+	client := &http.Client{Timeout: 30 * time.Minute}
 
 	var lastErr error
 	for attempt := 0; attempt < 3; attempt++ {

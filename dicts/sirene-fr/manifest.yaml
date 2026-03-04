@@ -1,17 +1,21 @@
 id: sirene-fr
-version: "2025-01"
+version: 2026-02
 jurisdiction: fr
 entity_type: company
-source: "SIRENE (sample)"
-source_url: "https://www.sirene.fr/"
-license: CC0
-data_file: data.csv
+source: SIRENE (INSEE)
+source_url: https://www.data.gouv.fr/api/1/datasets/r/825f4199-cadd-486c-ac46-a65a8ea1a047
+license: Licence Ouverte v2
+data_file: data.db
+method: ""
 format:
-  delimiter: ";"
-  encoding: utf-8
-  has_header: true
-  key_column: "term"
-  normalize: lowercase_ascii
-metadata_columns:
-  - name: legal_form
-    column: "legal_form"
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

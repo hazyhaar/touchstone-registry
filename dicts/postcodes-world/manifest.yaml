@@ -1,9 +1,9 @@
-id: meps-eu
+id: postcodes-world
 version: 2026-03
-jurisdiction: eu
-entity_type: politician
-source: European Parliament
-source_url: https://data.europarl.europa.eu/distribution/meps_10_32_en.csv
+jurisdiction: ""
+entity_type: postcode
+source: Geonames
+source_url: https://download.geonames.org/export/zip/allCountries.zip
 license: CC BY 4.0
 data_file: data.db
 method: ""
@@ -12,7 +12,7 @@ format:
     encoding: ""
     has_header: false
     key_column: ""
-    normalize: lowercase_ascii
+    normalize: lowercase
 metadata_columns: []
 patterns: []
 type: ""

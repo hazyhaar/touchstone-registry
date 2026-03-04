@@ -1,10 +1,10 @@
-id: meps-eu
+id: arrondissements-fr
 version: 2026-03
-jurisdiction: eu
-entity_type: politician
-source: European Parliament
-source_url: https://data.europarl.europa.eu/distribution/meps_10_32_en.csv
-license: CC BY 4.0
+jurisdiction: fr
+entity_type: arrondissement
+source: INSEE COG communes
+source_url: https://www.insee.fr/fr/statistiques/fichier/8377162/v_commune_2025.csv
+license: CC0
 data_file: data.db
 method: ""
 format:

@@ -25,7 +25,7 @@ func (a *lauEUAdapter) Description() string {
 	return "Eurostat LAU 2023 — communes EU27 (~100K)"
 }
 func (a *lauEUAdapter) DefaultURL() string {
-	return "https://ec.europa.eu/eurostat/documents/345175/501971/EU-27-LAU-2023-NUTS-2024.csv"
+	return "https://gisco-services.ec.europa.eu/distribution/v2/lau/csv/LAU_RG_01M_2024_4326.csv"
 }
 func (a *lauEUAdapter) License() string { return "CC BY 4.0" }
 
@@ -113,7 +113,8 @@ func parseLAU(path string) (map[string]*dict.Entry, error) {
 	nameCol := colByNames(colIdx, "LAU NAME NATIONAL", "LAU_NAME_NATIONAL", "LAU NAME LATIN", "LAU_NAME_LATIN", "LAU_NAME", "NAME")
 	nutsCol := colByNames(colIdx, "NUTS 3 CODE", "NUTS3", "NUTS_3", "NUTS3_CODE")
 	countryCol := colByNames(colIdx, "CNTR_CODE", "COUNTRY")
-	popCol := colByNames(colIdx, "POPULATION", "POP_2021", "TOTAL_POP")
+	popCol := colByNames(colIdx, "POPULATION", "POP_2021", "POP_2024", "TOTAL_POP")
+	giscoCol := colByNames(colIdx, "GISCO_ID")
 
 	entries := make(map[string]*dict.Entry, 120000)
 	var count int
@@ -128,6 +129,19 @@ func parseLAU(path string) (map[string]*dict.Entry, error) {
 
 		lau := strings.TrimSpace(safeCol(record, lauCol))
 		name := strings.TrimSpace(safeCol(record, nameCol))
+		country := strings.TrimSpace(safeCol(record, countryCol))
+
+		// GISCO CSV: extract LAU code and country from GISCO_ID (e.g. "FR_02022")
+		if lau == "" && giscoCol >= 0 {
+			gisco := strings.TrimSpace(safeCol(record, giscoCol))
+			if parts := strings.SplitN(gisco, "_", 2); len(parts) == 2 {
+				if country == "" {
+					country = parts[0]
+				}
+				lau = parts[1]
+			}
+		}
+
 		if name == "" && lau == "" {
 			continue
 		}
@@ -136,7 +150,7 @@ func parseLAU(path string) (map[string]*dict.Entry, error) {
 			"lau_code":   lau,
 			"name":       name,
 			"nuts3":      safeCol(record, nutsCol),
-			"country":    safeCol(record, countryCol),
+			"country":    country,
 			"population": safeCol(record, popCol),
 		}
 

@@ -92,11 +92,13 @@ func parseFINESS(path string) (map[string]*dict.Entry, error) {
 		return nil, fmt.Errorf("read first line: %w", err)
 	}
 
-	// Check if it's actually a header with column names
+	// Check if it's actually a header with column names.
+	// The etalab metadata line starts with "finess;etalab;..." — do NOT match
+	// on bare "finess" which would false-positive on the metadata line.
 	hasHeader := false
 	for _, h := range first {
 		lower := strings.ToLower(strings.TrimSpace(h))
-		if lower == "nofinesset" || lower == "rs" || lower == "finess" {
+		if lower == "nofinesset" || lower == "rs" || lower == "rslongue" {
 			hasHeader = true
 			break
 		}

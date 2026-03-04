@@ -1,9 +1,9 @@
-id: finess-fr
+id: addresses-fr
 version: 2026-03
 jurisdiction: fr
-entity_type: health_establishment
-source: FINESS (data.gouv.fr)
-source_url: https://static.data.gouv.fr/resources/finess-extraction-du-fichier-des-etablissements/20260108-153415/etalab-cs1100507-stock-20260107-0342.csv
+entity_type: address
+source: BAN (Base Adresse Nationale)
+source_url: https://adresse.data.gouv.fr/data/ban/adresses/latest/csv/adresses-france.csv.gz
 license: Licence Ouverte v2
 data_file: data.db
 method: ""
@@ -17,5 +17,8 @@ metadata_columns: []
 patterns: []
 type: ""
 update_frequency: ""
-entity_spec: null
+entity_spec:
+    pseudo_strategy: ""
+    pseudo_prefix: ""
+    sensitivity: high
 response_fields: []

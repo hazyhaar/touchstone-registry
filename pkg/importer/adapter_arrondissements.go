@@ -25,7 +25,7 @@ func (a *arrondissementsAdapter) Description() string {
 	return "INSEE COG — arrondissements municipaux (Paris, Lyon, Marseille)"
 }
 func (a *arrondissementsAdapter) DefaultURL() string {
-	return "https://www.insee.fr/fr/statistiques/fichier/7766585/v_commune_depuis_1943.csv"
+	return "https://www.insee.fr/fr/statistiques/fichier/8377162/v_commune_2025.csv"
 }
 func (a *arrondissementsAdapter) License() string { return "CC0" }
 

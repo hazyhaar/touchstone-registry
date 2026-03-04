@@ -25,7 +25,7 @@ func (a *mepsEUAdapter) Description() string {
 	return "Parlement Europeen — deputes europeens (MEPs)"
 }
 func (a *mepsEUAdapter) DefaultURL() string {
-	return "https://data.europarl.europa.eu/api/v2/meps?format=csv&offset=0&limit=800"
+	return "https://data.europarl.europa.eu/distribution/meps_10_32_en.csv"
 }
 func (a *mepsEUAdapter) License() string { return "CC BY 4.0" }
 
@@ -108,10 +108,10 @@ func parseMEPs(path string) (map[string]*dict.Entry, error) {
 	}
 
 	nameCol := colByNames(colIdx, "fullname", "name", "label", "mep_name")
-	familyCol := colByNames(colIdx, "familyname", "family_name", "last_name", "lastname")
-	givenCol := colByNames(colIdx, "givenname", "given_name", "first_name", "firstname")
-	countryCol := colByNames(colIdx, "country", "country_of_representation", "countryofrepresentation")
-	groupCol := colByNames(colIdx, "political_group", "politicalgroup", "group")
+	familyCol := colByNames(colIdx, "familyname", "family_name", "last_name", "lastname", "mep_family_name", "mep_official_family_name")
+	givenCol := colByNames(colIdx, "givenname", "given_name", "first_name", "firstname", "mep_given_name", "mep_official_given_name")
+	countryCol := colByNames(colIdx, "country", "country_of_representation", "countryofrepresentation", "mep_country_of_representation")
+	groupCol := colByNames(colIdx, "political_group", "politicalgroup", "group", "mep_political_group")
 
 	entries := make(map[string]*dict.Entry, 1500)
 	for {

@@ -1,9 +1,9 @@
-id: meps-eu
+id: lau-eu
 version: 2026-03
 jurisdiction: eu
-entity_type: politician
-source: European Parliament
-source_url: https://data.europarl.europa.eu/distribution/meps_10_32_en.csv
+entity_type: municipality
+source: Eurostat LAU
+source_url: https://gisco-services.ec.europa.eu/distribution/v2/lau/csv/LAU_RG_01M_2024_4326.csv
 license: CC BY 4.0
 data_file: data.db
 method: ""
