@@ -68,8 +68,8 @@ func (p *panelHandler) dictsList(w http.ResponseWriter, r *http.Request) {
 	recs, _ := p.svc.ListDicts()
 
 	views := make([]templates.DictView, len(recs))
-	for i, rec := range recs {
-		views[i] = dictToView(rec)
+	for i := range recs {
+		views[i] = dictToView(recs[i])
 	}
 
 	renderTempl(w, r, templates.DictsList(views))
@@ -91,8 +91,8 @@ func (p *panelHandler) dictDetail(w http.ResponseWriter, r *http.Request) {
 	runs, _ := p.svc.ListImportRuns("", id)
 
 	sourceViews := make([]templates.SourceView, len(sources))
-	for i, s := range sources {
-		sourceViews[i] = sourceToView(s)
+	for i := range sources {
+		sourceViews[i] = sourceToView(sources[i])
 	}
 
 	runViews := make([]templates.ImportRunView, 0)
@@ -110,8 +110,8 @@ func (p *panelHandler) sourcesList(w http.ResponseWriter, r *http.Request) {
 	recs, _ := p.svc.ListSources("")
 
 	views := make([]templates.SourceView, len(recs))
-	for i, s := range recs {
-		views[i] = sourceToView(s)
+	for i := range recs {
+		views[i] = sourceToView(recs[i])
 	}
 
 	renderTempl(w, r, templates.SourcesList(views))
@@ -121,8 +121,8 @@ func (p *panelHandler) importsList(w http.ResponseWriter, r *http.Request) {
 	runs, _ := p.svc.ListImportRuns("", "")
 
 	views := make([]templates.ImportRunView, len(runs))
-	for i, run := range runs {
-		views[i] = importRunToView(run)
+	for i := range runs {
+		views[i] = importRunToView(runs[i])
 	}
 
 	renderTempl(w, r, templates.ImportsList(views))

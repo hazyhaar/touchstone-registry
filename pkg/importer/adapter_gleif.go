@@ -48,8 +48,8 @@ func (a *gleifAdapter) Import(ctx context.Context, sourceURL, outputDir string) 
 	zipPath := filepath.Join(dlDir, "lei.zip")
 	fmt.Printf("  telechargement %s...\n", actualURL)
 	fmt.Println("  (fichier volumineux ~450 Mo, patience...)")
-	if err := downloadFile(ctx, actualURL, zipPath); err != nil {
-		return fmt.Errorf("download: %w", err)
+	if dlErr := downloadFile(ctx, actualURL, zipPath); dlErr != nil {
+		return fmt.Errorf("download: %w", dlErr)
 	}
 
 	files, err := unzipFile(zipPath, dlDir)

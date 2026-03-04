@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func setupResolveRegistry(t *testing.T) (*Registry, string) {
+func setupResolveRegistry(t *testing.T) (*Registry, string) { //nolint:unparam // dir used in future tests
 	t.Helper()
 	dir := t.TempDir()
 

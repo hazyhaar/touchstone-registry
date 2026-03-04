@@ -18,7 +18,8 @@ func (s *Service) SyncFromRegistry(reg *dict.Registry) error {
 	infos := reg.ListDicts()
 	now := time.Now().Unix()
 
-	for _, info := range infos {
+	for i := range infos {
+		info := &infos[i]
 		// Check if already exists.
 		_, err := s.GetDict(info.ID)
 		if err == nil {

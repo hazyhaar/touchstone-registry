@@ -1,4 +1,4 @@
-// CLAUDE:SUMMARY Import adapter for INSEE COG countries (pays et territoires) with ISO codes and sovereignty.
+// CLAUDE:SUMMARY Import adapter for INSEE COG countries (pays et territories) with ISO codes and sovereignty.
 package importer
 
 import (
@@ -22,7 +22,7 @@ type cogPaysAdapter struct{}
 func (a *cogPaysAdapter) ID() string      { return "insee-cog-pays" }
 func (a *cogPaysAdapter) DictID() string  { return "pays-fr" }
 func (a *cogPaysAdapter) Description() string {
-	return "INSEE COG pays et territoires (codes, continents, souverainete)"
+	return "INSEE COG pays et territories (codes, continents, sovereignty)"
 }
 func (a *cogPaysAdapter) DefaultURL() string {
 	return "https://www.insee.fr/fr/statistiques/fichier/7766585/v_pays_territoire_2024.csv"

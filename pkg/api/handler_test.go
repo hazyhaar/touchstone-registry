@@ -167,7 +167,7 @@ func TestHandler_GetAliases_Unknown(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
 		t.Fatal(err)
 	}
-	if resp.Aliases != nil && len(resp.Aliases) != 0 {
+	if len(resp.Aliases) != 0 {
 		t.Errorf("aliases should be empty for unknown domain")
 	}
 }

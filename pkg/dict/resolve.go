@@ -44,8 +44,8 @@ func (mc *mappingCache) get(path string) (map[string]string, error) {
 	defer mc.mu.Unlock()
 
 	// Double-check after acquiring write lock.
-	if m, ok := mc.cache[path]; ok {
-		return m, nil
+	if cached, ok := mc.cache[path]; ok {
+		return cached, nil
 	}
 
 	data, err := os.ReadFile(path)
