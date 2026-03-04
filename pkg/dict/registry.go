@@ -11,16 +11,18 @@ import (
 
 // Registry holds all loaded dictionaries and serves classification queries.
 type Registry struct {
-	mu       sync.RWMutex
-	dicts    map[string]*Dictionary
-	dictsDir string
+	mu         sync.RWMutex
+	dicts      map[string]*Dictionary
+	aliasPools map[string][]AliasEntry // domain → entries
+	dictsDir   string
 }
 
 // NewRegistry creates a new empty registry for the given directory.
 func NewRegistry(dictsDir string) *Registry {
 	return &Registry{
-		dicts:    make(map[string]*Dictionary),
-		dictsDir: dictsDir,
+		dicts:      make(map[string]*Dictionary),
+		aliasPools: make(map[string][]AliasEntry),
+		dictsDir:   dictsDir,
 	}
 }
 
@@ -32,14 +34,37 @@ func (r *Registry) Load() error {
 	}
 
 	newDicts := make(map[string]*Dictionary)
+	newAliases := make(map[string][]AliasEntry)
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
 		dir := filepath.Join(r.dictsDir, entry.Name())
-		if _, err := os.Stat(filepath.Join(dir, "manifest.yaml")); err != nil {
+		manifestPath := filepath.Join(dir, "manifest.yaml")
+		if _, err := os.Stat(manifestPath); err != nil {
 			continue
 		}
+
+		// Peek at manifest to check if alias_pool.
+		m, err := LoadManifest(manifestPath)
+		if err != nil {
+			return fmt.Errorf("load manifest %s: %w", entry.Name(), err)
+		}
+		if m.Type == "alias_pool" {
+			if m.Domain != "" {
+				newAliases[m.Domain] = m.AliasEntries
+			}
+			// Also load as a dictionary for DictInfo listing.
+			d := &Dictionary{
+				Manifest:  m,
+				Entries:   make(map[string]*Entry),
+				normalize: GetNormalizer(m.Format.Normalize),
+				dir:       dir,
+			}
+			newDicts[m.ID] = d
+			continue
+		}
+
 		d, err := LoadDictionary(dir)
 		if err != nil {
 			return fmt.Errorf("load dictionary %s: %w", entry.Name(), err)
@@ -49,6 +74,7 @@ func (r *Registry) Load() error {
 
 	r.mu.Lock()
 	r.dicts = newDicts
+	r.aliasPools = newAliases
 	r.mu.Unlock()
 	return nil
 }
@@ -64,6 +90,7 @@ type Match struct {
 	Jurisdiction string            `json:"jurisdiction"`
 	EntityType   string            `json:"entity_type"`
 	Metadata     map[string]string `json:"metadata,omitempty"`
+	EntitySpec   *EntitySpec       `json:"entity_spec,omitempty"`
 }
 
 // ClassifyResult is the response for a single term classification.
@@ -125,6 +152,7 @@ func (r *Registry) Classify(term string, opts *ClassifyOptions) *ClassifyResult 
 			DictID:       d.Manifest.ID,
 			Jurisdiction: d.Manifest.Jurisdiction,
 			EntityType:   d.Manifest.EntityType,
+			EntitySpec:   d.Manifest.EntitySpec,
 		}
 		if entry.Metadata != nil {
 			m.Metadata = entry.Metadata
@@ -140,14 +168,18 @@ func (r *Registry) Classify(term string, opts *ClassifyOptions) *ClassifyResult 
 
 // DictInfo is the public metadata for a loaded dictionary.
 type DictInfo struct {
-	ID           string `json:"id"`
-	Version      string `json:"version"`
-	Jurisdiction string `json:"jurisdiction"`
-	EntityType   string `json:"entity_type"`
-	Source       string `json:"source"`
-	SourceURL    string `json:"source_url,omitempty"`
-	License      string `json:"license"`
-	Entries      int    `json:"entries"`
+	ID              string      `json:"id"`
+	Version         string      `json:"version"`
+	Jurisdiction    string      `json:"jurisdiction"`
+	EntityType      string      `json:"entity_type"`
+	Source          string      `json:"source"`
+	SourceURL       string      `json:"source_url,omitempty"`
+	License         string      `json:"license"`
+	Entries         int         `json:"entries"`
+	Type            string      `json:"type,omitempty"`
+	UpdateFrequency string      `json:"update_frequency,omitempty"`
+	EntitySpec      *EntitySpec `json:"entity_spec,omitempty"`
+	Domain          string      `json:"domain,omitempty"`
 }
 
 // ListDicts returns metadata for all loaded dictionaries, sorted by ID.
@@ -157,19 +189,89 @@ func (r *Registry) ListDicts() []DictInfo {
 
 	infos := make([]DictInfo, 0, len(r.dicts))
 	for _, d := range r.dicts {
+		entries := len(d.Entries)
+		if d.Manifest.Type == "alias_pool" {
+			entries = len(d.Manifest.AliasEntries)
+		}
 		infos = append(infos, DictInfo{
-			ID:           d.Manifest.ID,
-			Version:      d.Manifest.Version,
-			Jurisdiction: d.Manifest.Jurisdiction,
-			EntityType:   d.Manifest.EntityType,
-			Source:       d.Manifest.Source,
-			SourceURL:    d.Manifest.SourceURL,
-			License:      d.Manifest.License,
-			Entries:      len(d.Entries),
+			ID:              d.Manifest.ID,
+			Version:         d.Manifest.Version,
+			Jurisdiction:    d.Manifest.Jurisdiction,
+			EntityType:      d.Manifest.EntityType,
+			Source:          d.Manifest.Source,
+			SourceURL:       d.Manifest.SourceURL,
+			License:         d.Manifest.License,
+			Entries:         entries,
+			Type:            d.Manifest.Type,
+			UpdateFrequency: d.Manifest.UpdateFrequency,
+			EntitySpec:      d.Manifest.EntitySpec,
+			Domain:          d.Manifest.Domain,
 		})
 	}
 	sort.Slice(infos, func(i, j int) bool { return infos[i].ID < infos[j].ID })
 	return infos
+}
+
+// Resolve looks up a term across filtered dictionaries and returns the first rich match.
+func (r *Registry) Resolve(term string, opts *ClassifyOptions) *ResolveResult {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	ids := make([]string, 0, len(r.dicts))
+	for id := range r.dicts {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	for _, id := range ids {
+		d := r.dicts[id]
+		if opts != nil {
+			if len(opts.Jurisdictions) > 0 && !contains(opts.Jurisdictions, d.Manifest.Jurisdiction) {
+				continue
+			}
+			if len(opts.Types) > 0 && !contains(opts.Types, d.Manifest.EntityType) {
+				continue
+			}
+			if len(opts.Dicts) > 0 && !contains(opts.Dicts, d.Manifest.ID) {
+				continue
+			}
+		}
+
+		result, ok := d.Resolve(term)
+		if ok {
+			return result
+		}
+	}
+
+	return &ResolveResult{Match: false}
+}
+
+// GetAliases returns alias entries for a given domain.
+func (r *Registry) GetAliases(domain string) []AliasEntry {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	aliases, ok := r.aliasPools[domain]
+	if !ok {
+		return nil
+	}
+	// Return a copy to avoid data races.
+	out := make([]AliasEntry, len(aliases))
+	copy(out, aliases)
+	return out
+}
+
+// ListAliasDomains returns all loaded alias pool domains.
+func (r *Registry) ListAliasDomains() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	domains := make([]string, 0, len(r.aliasPools))
+	for d := range r.aliasPools {
+		domains = append(domains, d)
+	}
+	sort.Strings(domains)
+	return domains
 }
 
 // DictCount returns the number of loaded dictionaries.

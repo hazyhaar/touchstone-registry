@@ -3,28 +3,36 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 	"time"
 
-	"github.com/hazyhaar/touchstone-registry/pkg/api"
+	"github.com/hazyhaar/pkg/audit"
 	"github.com/hazyhaar/pkg/chassis"
+	"github.com/hazyhaar/touchstone-registry/pkg/admin"
+	"github.com/hazyhaar/touchstone-registry/pkg/api"
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
 	"github.com/hazyhaar/touchstone-registry/pkg/importer"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"gopkg.in/yaml.v3"
+
+	_ "modernc.org/sqlite"
 )
 
 type config struct {
-	Addr     string `yaml:"addr"`
-	DictsDir string `yaml:"dicts_dir"`
-	CertFile string `yaml:"cert_file"`
-	KeyFile  string `yaml:"key_file"`
+	Addr       string `yaml:"addr"`
+	DictsDir   string `yaml:"dicts_dir"`
+	CertFile   string `yaml:"cert_file"`
+	KeyFile    string `yaml:"key_file"`
+	AdminToken string `yaml:"admin_token"`
+	AdminDB    string `yaml:"admin_db"`
 }
 
 func main() {
@@ -64,32 +72,38 @@ func cmdServe(args []string) {
 		os.Exit(1)
 	}
 
-	reg, srv, checker := initServer(sdb, cfg, logger)
+	deps := initServer(sdb, cfg, logger)
 
 	// SIGHUP: hot reload dictionaries.
 	// SIGINT/SIGTERM: graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	defer sdb.Close()
+	if deps.adminDB != nil {
+		defer deps.adminDB.Close()
+	}
+	if deps.auditor != nil {
+		defer deps.auditor.Close()
+	}
 
 	sighup := make(chan os.Signal, 1)
 	signal.Notify(sighup, syscall.SIGHUP)
 	go func() {
 		for range sighup {
 			logger.Info("SIGHUP received, reloading dictionaries")
-			if reloadErr := reg.Reload(); reloadErr != nil {
+			if reloadErr := deps.reg.Reload(); reloadErr != nil {
 				logger.Error("reload failed", "error", reloadErr)
 			} else {
-				logger.Info("dictionaries reloaded", "count", reg.DictCount(), "entries", reg.TotalEntries())
+				logger.Info("dictionaries reloaded", "count", deps.reg.DictCount(), "entries", deps.reg.TotalEntries())
 			}
 		}
 	}()
 
-	go checker.Start(ctx)
+	go deps.checker.Start(ctx)
 
 	// Start chassis (TCP + QUIC).
 	go func() {
-		if startErr := srv.Start(ctx); startErr != nil {
+		if startErr := deps.srv.Start(ctx); startErr != nil {
 			logger.Error("chassis error", "error", startErr)
 			os.Exit(1)
 		}
@@ -99,12 +113,20 @@ func cmdServe(args []string) {
 	logger.Info("shutting down")
 	shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if stopErr := srv.Stop(shutCtx); stopErr != nil {
+	if stopErr := deps.srv.Stop(shutCtx); stopErr != nil {
 		logger.Error("shutdown error", "error", stopErr)
 	}
 }
 
-func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) (*dict.Registry, *chassis.Server, *importer.Checker) {
+type serverDeps struct {
+	reg     *dict.Registry
+	srv     *chassis.Server
+	checker *importer.Checker
+	adminDB *sql.DB
+	auditor *audit.SQLiteLogger
+}
+
+func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) *serverDeps {
 	if err := sdb.Seed(importer.All()); err != nil {
 		sdb.Close()
 		logger.Error("failed to seed import sources", "error", err)
@@ -120,8 +142,58 @@ func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) (*dict.
 	}
 	logger.Info("dictionaries loaded", "count", reg.DictCount(), "entries", reg.TotalEntries())
 
-	// HTTP router.
-	router := api.NewRouter(reg)
+	// Combined HTTP mux: public API + admin.
+	topMux := http.NewServeMux()
+
+	// Public API routes.
+	apiRouter := api.NewRouter(reg)
+	topMux.Handle("/v1/", apiRouter)
+	topMux.Handle("/v1/health", apiRouter)
+
+	// Admin DB + admin routes.
+	var adminDB *sql.DB
+	var auditor *audit.SQLiteLogger
+	if cfg.AdminToken != "" {
+		dbPath := cfg.AdminDB
+		if dbPath == "" {
+			dbPath = filepath.Join(cfg.DictsDir, "admin.db")
+		}
+
+		var err error
+		adminDB, err = sql.Open("sqlite", dbPath+"?_txlock=immediate&_pragma=journal_mode(WAL)&_pragma=busy_timeout(10000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)")
+		if err != nil {
+			logger.Error("admin db open failed", "error", err)
+			os.Exit(1)
+		}
+		if _, err := adminDB.Exec(admin.Schema); err != nil {
+			logger.Error("admin schema init failed", "error", err)
+			os.Exit(1)
+		}
+
+		auditor = audit.NewSQLiteLogger(adminDB)
+		if err := auditor.Init(); err != nil {
+			logger.Error("audit init failed", "error", err)
+			os.Exit(1)
+		}
+
+		adminSvc := admin.NewService(adminDB, auditor)
+
+		// Sync on-disk dictionaries and legacy sources into admin DB.
+		if err := adminSvc.SyncFromRegistry(reg); err != nil {
+			logger.Warn("admin sync from registry failed", "error", err)
+		}
+		if err := adminSvc.MigrateFromSourceDB(sdb); err != nil {
+			logger.Warn("admin migrate from source db failed", "error", err)
+		}
+
+		adminAPIRouter := admin.NewRouter(adminSvc, cfg.AdminToken)
+		topMux.Handle("/admin/v1/", adminAPIRouter)
+
+		// Admin panel (HTML pages, no auth for convenience — protect via network).
+		panelRouter := admin.NewPanelRouter(adminSvc, reg)
+		topMux.Handle("/admin/", panelRouter)
+		logger.Info("admin API + panel enabled")
+	}
 
 	// MCP server with Touchstone tools.
 	mcpSrv := mcp.NewServer(&mcp.Implementation{Name: "touchstone", Version: "0.1.0"}, nil)
@@ -130,7 +202,7 @@ func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) (*dict.
 	// Chassis: dual-transport (TCP+QUIC) with TLS, security headers, MCP.
 	srv, err := chassis.New(chassis.Config{
 		Addr:      cfg.Addr,
-		Handler:   router,
+		Handler:   topMux,
 		MCPServer: mcpSrv,
 		CertFile:  cfg.CertFile,
 		KeyFile:   cfg.KeyFile,
@@ -145,7 +217,7 @@ func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) (*dict.
 	// Source availability checker (every 24h).
 	checker := importer.NewChecker(sdb, logger, 24*time.Hour)
 
-	return reg, srv, checker
+	return &serverDeps{reg: reg, srv: srv, checker: checker, adminDB: adminDB, auditor: auditor}
 }
 
 func loadConfig(path string, logger *slog.Logger) config {

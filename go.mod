@@ -3,6 +3,7 @@ module github.com/hazyhaar/touchstone-registry
 go 1.25.0
 
 require (
+	github.com/a-h/templ v0.3.1001
 	github.com/hazyhaar/pkg v0.0.0-20260224091357-ba355365ef24
 	github.com/modelcontextprotocol/go-sdk v1.3.1
 	golang.org/x/text v0.34.0

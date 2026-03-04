@@ -1,0 +1,49 @@
+package templates
+
+import "fmt"
+
+templ ImportsList(runs []ImportRunView) {
+	@Layout("Imports") {
+		<h1>Historique des imports</h1>
+		<div class="card">
+			@ImportsTable(runs)
+		</div>
+	}
+}
+
+templ ImportsTable(runs []ImportRunView) {
+	<table>
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Dict</th>
+				<th>Date</th>
+				<th>Status</th>
+				<th>Entrées</th>
+				<th>Durée</th>
+				<th>Erreur</th>
+			</tr>
+		</thead>
+		<tbody>
+			for _, r := range runs {
+				<tr>
+					<td class="mono" style="font-size:0.75rem">{ r.ID }</td>
+					<td class="mono">{ r.DictID }</td>
+					<td>{ r.StartedAt }</td>
+					<td>
+						if r.Status == "success" {
+							<span class="badge badge-success">success</span>
+						} else if r.Status == "failed" {
+							<span class="badge badge-failed">failed</span>
+						} else {
+							<span class="badge badge-running">running</span>
+						}
+					</td>
+					<td class="mono">{ fmt.Sprint(r.EntryCount) }</td>
+					<td class="mono">{ fmt.Sprintf("%dms", r.DurationMs) }</td>
+					<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">{ r.Error }</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}

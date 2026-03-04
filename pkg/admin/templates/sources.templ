@@ -1,0 +1,51 @@
+package templates
+
+import "fmt"
+
+templ SourcesList(sources []SourceView) {
+	@Layout("Sources") {
+		<h1>Sources</h1>
+		<div class="card">
+			@SourcesTable(sources)
+		</div>
+	}
+}
+
+templ SourcesTable(sources []SourceView) {
+	<table>
+		<thead>
+			<tr>
+				<th>Dict</th>
+				<th>Adapter</th>
+				<th>Description</th>
+				<th>URL</th>
+				<th>Status</th>
+				<th>Dernier import</th>
+				<th>Entrées</th>
+			</tr>
+		</thead>
+		<tbody>
+			for _, s := range sources {
+				<tr>
+					<td class="mono">{ s.DictID }</td>
+					<td class="mono">{ s.AdapterID }</td>
+					<td>{ s.Description }</td>
+					<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+						<a href={ templ.SafeURL(s.SourceURL) } target="_blank" rel="noopener">{ s.SourceURL }</a>
+					</td>
+					<td>
+						if s.LastStatus == "ok" {
+							<span class="badge badge-success">OK</span>
+						} else if s.LastStatus != "" {
+							<span class="badge badge-failed">{ s.LastStatus }</span>
+						} else {
+							<span class="badge" style="color:var(--text-dim)">—</span>
+						}
+					</td>
+					<td>{ s.LastImport }</td>
+					<td class="mono">{ fmt.Sprint(s.LastImportCount) }</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}

@@ -1,0 +1,21 @@
+id: pays-fr
+version: 2026-03
+jurisdiction: fr
+entity_type: country
+source: INSEE COG pays
+source_url: https://www.insee.fr/fr/statistiques/fichier/7766585/v_pays_territoire_2024.csv
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

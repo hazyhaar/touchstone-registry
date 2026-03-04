@@ -11,11 +11,13 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// RegisterMCPTools registers the three Touchstone MCP tools on the server.
+// RegisterMCPTools registers the Touchstone MCP tools on the server.
 func RegisterMCPTools(srv *mcp.Server, reg *dict.Registry) {
 	registerMCPClassifyTerm(srv, reg)
 	registerMCPClassifyBatch(srv, reg)
 	registerMCPListDicts(srv, reg)
+	registerMCPResolveTerm(srv, reg)
+	registerMCPGetAliases(srv, reg)
 }
 
 func registerMCPClassifyTerm(srv *mcp.Server, reg *dict.Registry) {
@@ -116,6 +118,48 @@ func parseArgs(req *mcp.CallToolRequest) map[string]any {
 		args = make(map[string]any)
 	}
 	return args
+}
+
+func registerMCPResolveTerm(srv *mcp.Server, reg *dict.Registry) {
+	tool := mcpTool("resolve_term",
+		"Resolve a term against public data registries and return rich structured data.",
+		map[string]any{
+			"term":          map[string]string{"type": "string", "description": "The term to resolve"},
+			"jurisdictions": map[string]string{"type": "string", "description": "Comma-separated jurisdiction filter"},
+			"types":         map[string]string{"type": "string", "description": "Comma-separated entity type filter"},
+			"dicts":         map[string]string{"type": "string", "description": "Comma-separated dictionary filter"},
+		},
+		[]string{"term"},
+	)
+
+	endpoint := resolveTermEndpoint(reg)
+
+	kit.RegisterMCPTool(srv, tool, endpoint, func(req *mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
+		args := parseArgs(req)
+		term, _ := args["term"].(string)
+		return &kit.MCPDecodeResult{Request: &resolveTermReq{
+			Term: term,
+			Opts: parseMCPOpts(args),
+		}}, nil
+	})
+}
+
+func registerMCPGetAliases(srv *mcp.Server, reg *dict.Registry) {
+	tool := mcpTool("get_aliases",
+		"Get alias entries for a specific domain (e.g. pharma, finance).",
+		map[string]any{
+			"domain": map[string]string{"type": "string", "description": "The alias pool domain"},
+		},
+		[]string{"domain"},
+	)
+
+	endpoint := getAliasesEndpoint(reg)
+
+	kit.RegisterMCPTool(srv, tool, endpoint, func(req *mcp.CallToolRequest) (*kit.MCPDecodeResult, error) {
+		args := parseArgs(req)
+		domain, _ := args["domain"].(string)
+		return &kit.MCPDecodeResult{Request: &getAliasesReq{Domain: domain}}, nil
+	})
 }
 
 // parseMCPOpts extracts ClassifyOptions from MCP tool arguments.

@@ -22,7 +22,9 @@ type sireneAdapter struct{}
 func (a *sireneAdapter) ID() string          { return "sirene-fr" }
 func (a *sireneAdapter) DictID() string      { return "sirene-fr" }
 func (a *sireneAdapter) Description() string { return "SIRENE FR (entreprises actives, base stock)" }
-func (a *sireneAdapter) DefaultURL() string   { return "https://files.data.gouv.fr/insee-sirene/StockUniteLegale_utf8.zip" }
+func (a *sireneAdapter) DefaultURL() string {
+	return "https://www.data.gouv.fr/api/1/datasets/r/825f4199-cadd-486c-ac46-a65a8ea1a047"
+}
 func (a *sireneAdapter) License() string      { return "Licence Ouverte v2" }
 
 func (a *sireneAdapter) Import(ctx context.Context, sourceURL, outputDir string) error {

@@ -1,0 +1,39 @@
+package templates
+
+templ AuditLog(entries []AuditEntryView) {
+	@Layout("Audit Log") {
+		<h1>Audit Log</h1>
+		<div class="card">
+			<table>
+				<thead>
+					<tr>
+						<th>Timestamp</th>
+						<th>Action</th>
+						<th>Parameters</th>
+						<th>Result</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, e := range entries {
+						<tr>
+							<td>{ e.Timestamp }</td>
+							<td class="mono">{ e.Action }</td>
+							<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">
+								<code>{ e.Parameters }</code>
+							</td>
+							<td class="mono">{ e.Result }</td>
+							<td>
+								if e.Status == "success" {
+									<span class="badge badge-success">OK</span>
+								} else {
+									<span class="badge badge-failed">{ e.Status }</span>
+								}
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}

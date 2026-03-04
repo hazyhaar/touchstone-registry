@@ -1,0 +1,21 @@
+id: mcc
+version: 2026-03
+jurisdiction: ""
+entity_type: merchant_category
+source: MCC Codes (ISO 18245)
+source_url: https://raw.githubusercontent.com/greggles/mcc-codes/main/mcc_codes.csv
+license: Public Domain
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

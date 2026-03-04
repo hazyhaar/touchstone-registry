@@ -1,0 +1,21 @@
+id: airports
+version: 2026-03
+jurisdiction: ""
+entity_type: airport
+source: OurAirports
+source_url: https://davidmegginson.github.io/ourairports-data/airports.csv
+license: Public Domain
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

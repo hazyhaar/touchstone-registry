@@ -29,7 +29,21 @@ type classifyBatchReq struct {
 	Opts  *dict.ClassifyOptions
 }
 
-// Endpoints returns the three core kit.Endpoints backed by the registry.
+type resolveTermReq struct {
+	Term string
+	Opts *dict.ClassifyOptions
+}
+
+type getAliasesReq struct {
+	Domain string
+}
+
+type aliasesResponse struct {
+	Domain  string             `json:"domain"`
+	Aliases []dict.AliasEntry  `json:"aliases"`
+}
+
+// Endpoints returns the core kit.Endpoints backed by the registry.
 
 func classifyTermEndpoint(reg *dict.Registry) kit.Endpoint {
 	return func(_ context.Context, request any) (any, error) {
@@ -58,5 +72,20 @@ func classifyBatchEndpoint(reg *dict.Registry) kit.Endpoint {
 func listDictsEndpoint(reg *dict.Registry) kit.Endpoint {
 	return func(_ context.Context, _ any) (any, error) {
 		return dictsResponse{Dictionaries: reg.ListDicts()}, nil
+	}
+}
+
+func resolveTermEndpoint(reg *dict.Registry) kit.Endpoint {
+	return func(_ context.Context, request any) (any, error) {
+		req := request.(*resolveTermReq)
+		return reg.Resolve(req.Term, req.Opts), nil
+	}
+}
+
+func getAliasesEndpoint(reg *dict.Registry) kit.Endpoint {
+	return func(_ context.Context, request any) (any, error) {
+		req := request.(*getAliasesReq)
+		aliases := reg.GetAliases(req.Domain)
+		return aliasesResponse{Domain: req.Domain, Aliases: aliases}, nil
 	}
 }

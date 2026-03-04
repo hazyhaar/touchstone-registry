@@ -1,19 +1,21 @@
 id: patronymes-fr
-version: "2025-01"
+version: 2026-02
 jurisdiction: fr
 entity_type: surname
-source: "INSEE fichier des noms de famille"
-source_url: "https://www.insee.fr/fr/statistiques/3536630"
+source: INSEE fichier des noms de famille
+source_url: https://www.insee.fr/fr/statistiques/fichier/3536630/noms2008nat_txt.zip
 license: CC0
-data_file: data.csv
+data_file: data.gob
+method: ""
 format:
-  delimiter: ";"
-  encoding: utf-8
-  has_header: true
-  key_column: "term"
-  normalize: lowercase_ascii
-metadata_columns:
-  - name: frequency
-    column: "frequency"
-  - name: rank
-    column: "rank"
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

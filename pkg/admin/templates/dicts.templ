@@ -1,0 +1,89 @@
+package templates
+
+import "fmt"
+
+templ DictsList(dicts []DictView) {
+	@Layout("Dictionnaires") {
+		<h1>Dictionnaires</h1>
+		<div class="card">
+			<table>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Type</th>
+						<th>Juridiction</th>
+						<th>Entity Type</th>
+						<th>Entrées</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, d := range dicts {
+						<tr>
+							<td><a href={ templ.SafeURL("/admin/dicts/" + d.ID) } class="mono">{ d.ID }</a></td>
+							<td>
+								if d.Type == "alias_pool" {
+									<span class="badge badge-alias">alias</span>
+								} else {
+									<span class="badge badge-registry">registry</span>
+								}
+							</td>
+							<td>{ d.Jurisdiction }</td>
+							<td>{ d.EntityType }</td>
+							<td class="mono">{ fmt.Sprint(d.EntryCount) }</td>
+							<td>
+								if d.Status == "active" {
+									<span class="badge badge-active">active</span>
+								} else {
+									<span class="badge badge-archived">{ d.Status }</span>
+								}
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ DictDetail(d DictView, sources []SourceView, runs []ImportRunView) {
+	@Layout(d.ID) {
+		<h1>{ d.ID }</h1>
+		<div class="stats">
+			<div class="stat-card">
+				<div class="stat-value">{ fmt.Sprint(d.EntryCount) }</div>
+				<div class="stat-label">Entrées</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-value">{ d.Jurisdiction }</div>
+				<div class="stat-label">Juridiction</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-value">{ d.EntityType }</div>
+				<div class="stat-label">Entity Type</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-value">
+					if d.Status == "active" {
+						<span class="badge badge-active">active</span>
+					} else {
+						<span class="badge badge-archived">{ d.Status }</span>
+					}
+				</div>
+				<div class="stat-label">Status</div>
+			</div>
+		</div>
+		if len(sources) > 0 {
+			<div class="card">
+				<h2>Sources</h2>
+				@SourcesTable(sources)
+			</div>
+		}
+		if len(runs) > 0 {
+			<div class="card">
+				<h2>Historique imports</h2>
+				@ImportsTable(runs)
+			</div>
+		}
+	}
+}

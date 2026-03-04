@@ -26,6 +26,7 @@ type Dictionary struct {
 	Entries   map[string]*Entry `json:"-"`
 	normalize Normalizer
 	patterns  *patternMatcher
+	dir       string // directory where this dictionary was loaded from
 }
 
 // LoadDictionary reads a manifest.yaml and loads data from gob, csv, or patterns.
@@ -40,6 +41,7 @@ func LoadDictionary(dir string) (*Dictionary, error) {
 		Manifest:  manifest,
 		Entries:   make(map[string]*Entry),
 		normalize: GetNormalizer(manifest.Format.Normalize),
+		dir:       dir,
 	}
 
 	// Pattern-based dictionaries: compile regexes, no data file.

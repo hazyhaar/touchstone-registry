@@ -1,0 +1,18 @@
+# Build artifacts
+bin/
+
+# Data files (imported on VPS, not in git)
+dicts/**/*.gob
+dicts/**/*.db
+dicts/sources.db
+
+# Admin DB
+admin.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store

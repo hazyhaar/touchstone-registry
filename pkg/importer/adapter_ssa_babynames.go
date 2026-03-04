@@ -21,7 +21,12 @@ type ssaBabyNamesAdapter struct{}
 func (a *ssaBabyNamesAdapter) ID() string          { return "ssa-babynames-us" }
 func (a *ssaBabyNamesAdapter) DictID() string      { return "firstnames-us" }
 func (a *ssaBabyNamesAdapter) Description() string { return "SSA baby names US (Social Security Administration)" }
-func (a *ssaBabyNamesAdapter) DefaultURL() string   { return "https://www.ssa.gov/oact/babynames/names.zip" }
+func (a *ssaBabyNamesAdapter) DefaultURL() string {
+	// NOTE: SSA blocks automated downloads (403). Manual download required:
+	// curl -o names.zip https://www.ssa.gov/oact/babynames/names.zip
+	// then: touchstone import -source ssa-babynames-us -url file:///path/to/names.zip
+	return "https://www.ssa.gov/oact/babynames/names.zip"
+}
 func (a *ssaBabyNamesAdapter) License() string      { return "Public Domain" }
 
 func (a *ssaBabyNamesAdapter) Import(ctx context.Context, sourceURL, outputDir string) error {

@@ -1,0 +1,26 @@
+id: lei
+version: 2026-03
+jurisdiction: ""
+entity_type: legal_entity
+source: GLEIF Golden Copy
+source_url: https://goldencopy.gleif.org/api/v2/golden-copies/publishes/lei2/latest?type=full_file&format=csv
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec:
+    pattern: ^[A-Z0-9]{20}$
+    checksum: mod97
+    pseudo_strategy: ""
+    pseudo_prefix: ""
+    sensitivity: public
+response_fields: []

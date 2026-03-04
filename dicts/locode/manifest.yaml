@@ -1,0 +1,21 @@
+id: locode
+version: 2026-03
+jurisdiction: ""
+entity_type: location
+source: UN/LOCODE (UNECE)
+source_url: https://datahub.io/core/un-locode/r/code-list.csv
+license: PDDL
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

@@ -1,0 +1,21 @@
+id: naf-fr
+version: 2026-03
+jurisdiction: fr
+entity_type: activity_code
+source: INSEE NAF Rev.2
+source_url: https://data.iledefrance.fr/api/explore/v2.1/catalog/datasets/nomenclature-dactivites-francaise-naf-rev-2-code-ape/exports/csv?delimiter=%3B&list_separator=%2C&quote_all=false&with_bom=true
+license: CC0
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

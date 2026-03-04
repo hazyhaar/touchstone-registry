@@ -1,2 +1,4 @@
 addr: ":8420"
 dicts_dir: "dicts"
+admin_token: "changeme"
+admin_db: "admin.db"

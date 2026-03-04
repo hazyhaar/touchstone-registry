@@ -1,17 +1,21 @@
 id: companies-uk
-version: "2025-01"
+version: 2026-02
 jurisdiction: uk
 entity_type: company
-source: "Companies House (sample)"
-source_url: "https://www.gov.uk/government/organisations/companies-house"
-license: CC0
-data_file: data.csv
+source: Companies House
+source_url: https://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2024-01-01.zip
+license: OGL v3
+data_file: data.gob
+method: ""
 format:
-  delimiter: ";"
-  encoding: utf-8
-  has_header: true
-  key_column: "term"
-  normalize: lowercase_ascii
-metadata_columns:
-  - name: legal_form
-    column: "legal_form"
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

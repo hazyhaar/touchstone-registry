@@ -1,0 +1,21 @@
+id: associations-fr
+version: 2026-03
+jurisdiction: fr
+entity_type: association
+source: RNA (Ministere de l'Interieur)
+source_url: https://media.interieur.gouv.fr/rna/rna_waldec_20250901.zip
+license: Licence Ouverte v2
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

@@ -1,0 +1,21 @@
+id: surnames-us
+version: 2026-02
+jurisdiction: us
+entity_type: surname
+source: US Census Bureau 2010
+source_url: https://www2.census.gov/topics/genealogy/2010surnames/names.zip
+license: Public Domain
+data_file: data.gob
+method: ""
+format:
+    delimiter: ""
+    encoding: ""
+    has_header: false
+    key_column: ""
+    normalize: lowercase_ascii
+metadata_columns: []
+patterns: []
+type: ""
+update_frequency: ""
+entity_spec: null
+response_fields: []

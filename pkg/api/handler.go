@@ -17,12 +17,16 @@ func NewRouter(reg *dict.Registry) http.Handler {
 		classifyTerm:  classifyTermEndpoint(reg),
 		classifyBatch: classifyBatchEndpoint(reg),
 		listDicts:     listDictsEndpoint(reg),
+		resolveTerm:   resolveTermEndpoint(reg),
+		getAliases:    getAliasesEndpoint(reg),
 		reg:           reg,
 	}
 
 	mux.HandleFunc("GET /v1/classify/batch", methodNotAllowed) // prevent GET on batch
 	mux.HandleFunc("POST /v1/classify/batch", h.handleClassifyBatch)
 	mux.HandleFunc("GET /v1/classify/{term}", h.handleClassifyTerm)
+	mux.HandleFunc("GET /v1/resolve/{term}", h.handleResolveTerm)
+	mux.HandleFunc("GET /v1/aliases/{domain}", h.handleGetAliases)
 	mux.HandleFunc("GET /v1/dicts", h.handleListDicts)
 	mux.HandleFunc("GET /v1/health", h.handleHealth)
 
@@ -33,6 +37,8 @@ type handler struct {
 	classifyTerm  kit.Endpoint
 	classifyBatch kit.Endpoint
 	listDicts     kit.Endpoint
+	resolveTerm   kit.Endpoint
+	getAliases    kit.Endpoint
 	reg           *dict.Registry
 }
 
@@ -83,6 +89,43 @@ func (h *handler) handleClassifyBatch(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// --- resolve single term ---
+
+func (h *handler) handleResolveTerm(w http.ResponseWriter, r *http.Request) {
+	term := r.PathValue("term")
+	if term == "" {
+		writeError(w, http.StatusBadRequest, "missing term")
+		return
+	}
+
+	resp, err := h.resolveTerm(r.Context(), &resolveTermReq{
+		Term: term,
+		Opts: parseOpts(r),
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// --- get aliases ---
+
+func (h *handler) handleGetAliases(w http.ResponseWriter, r *http.Request) {
+	domain := r.PathValue("domain")
+	if domain == "" {
+		writeError(w, http.StatusBadRequest, "missing domain")
+		return
+	}
+
+	resp, err := h.getAliases(r.Context(), &getAliasesReq{Domain: domain})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)

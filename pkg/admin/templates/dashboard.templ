@@ -1,0 +1,33 @@
+package templates
+
+import "fmt"
+
+templ Dashboard(data DashboardData) {
+	@Layout("Dashboard") {
+		<h1>Dashboard</h1>
+		<div class="stats">
+			<div class="stat-card">
+				<div class="stat-value">{ fmt.Sprint(data.DictCount) }</div>
+				<div class="stat-label">Dictionnaires</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-value">{ fmt.Sprint(data.TotalEntries) }</div>
+				<div class="stat-label">Entrées totales</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-value">{ fmt.Sprint(data.SourceCount) }</div>
+				<div class="stat-label">Sources</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-value">{ fmt.Sprint(data.ImportRuns) }</div>
+				<div class="stat-label">Imports</div>
+			</div>
+		</div>
+		if len(data.RecentRuns) > 0 {
+			<div class="card">
+				<h2>Derniers imports</h2>
+				@ImportsTable(data.RecentRuns)
+			</div>
+		}
+	}
+}

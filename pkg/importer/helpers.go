@@ -34,6 +34,7 @@ func downloadFile(ctx context.Context, url, dest string) error {
 		if err != nil {
 			return fmt.Errorf("create request: %w", err)
 		}
+		req.Header.Set("User-Agent", "touchstone-registry/1.0 (open-data-import)")
 
 		resp, err := client.Do(req)
 		if err != nil {
