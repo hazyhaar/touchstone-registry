@@ -2,14 +2,15 @@
 package dict
 
 import (
+	"database/sql"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
-	"unicode/utf8"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/text/encoding/htmlindex"
 	"golang.org/x/text/transform"
@@ -20,13 +21,15 @@ type Entry struct {
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
-// Dictionary is one loaded dictionary with its manifest and in-memory hashmap.
+// Dictionary is one loaded dictionary with its manifest and in-memory hashmap or SQLite backend.
 type Dictionary struct {
-	Manifest  *Manifest        `json:"manifest"`
-	Entries   map[string]*Entry `json:"-"`
-	normalize Normalizer
-	patterns  *patternMatcher
-	dir       string // directory where this dictionary was loaded from
+	Manifest   *Manifest        `json:"manifest"`
+	Entries    map[string]*Entry `json:"-"`
+	normalize  Normalizer
+	patterns   *patternMatcher
+	dir        string  // directory where this dictionary was loaded from
+	db         *sql.DB // non-nil for SQLite-backed dicts
+	entryCount int     // cached entry count
 }
 
 // LoadDictionary reads a manifest.yaml and loads data from gob, csv, or patterns.
@@ -54,12 +57,22 @@ func LoadDictionary(dir string) (*Dictionary, error) {
 		return d, nil
 	}
 
+	// SQLite takes priority over gob.
+	dbPath := filepath.Join(dir, "data.db")
+	if _, err := os.Stat(dbPath); err == nil {
+		if err := d.loadSQLite(dbPath); err != nil {
+			return nil, fmt.Errorf("dict %s: %w", manifest.ID, err)
+		}
+		return d, nil
+	}
+
 	// Gob takes priority over CSV.
 	gobPath := filepath.Join(dir, "data.gob")
 	if _, err := os.Stat(gobPath); err == nil {
 		if err := d.loadGob(gobPath); err != nil {
 			return nil, fmt.Errorf("dict %s: %w", manifest.ID, err)
 		}
+		d.entryCount = len(d.Entries)
 		return d, nil
 	}
 
@@ -68,6 +81,7 @@ func LoadDictionary(dir string) (*Dictionary, error) {
 	if err := d.loadCSV(dataPath); err != nil {
 		return nil, fmt.Errorf("dict %s: %w", manifest.ID, err)
 	}
+	d.entryCount = len(d.Entries)
 	return d, nil
 }
 
@@ -190,8 +204,25 @@ func (d *Dictionary) loadCSV(path string) error {
 
 // Lookup searches for a term in this dictionary after normalization.
 func (d *Dictionary) Lookup(term string) (*Entry, bool) {
-	e, ok := d.Entries[d.normalize(term)]
+	key := d.normalize(term)
+	if d.db != nil {
+		return d.lookupSQLite(key)
+	}
+	e, ok := d.Entries[key]
 	return e, ok
+}
+
+// EntryCount returns the number of entries in this dictionary.
+func (d *Dictionary) EntryCount() int {
+	return d.entryCount
+}
+
+// Close releases resources (SQLite connections) held by this dictionary.
+func (d *Dictionary) Close() error {
+	if d.db != nil {
+		return d.db.Close()
+	}
+	return nil
 }
 
 // NormalizeTerm applies this dictionary's normalizer to a term.

@@ -46,6 +46,8 @@ func main() {
 		cmdServe(os.Args[2:])
 	case "import":
 		cmdImport(os.Args[2:])
+	case "migrate-gob":
+		cmdMigrateGob(os.Args[2:])
 	default:
 		usage()
 		os.Exit(1)
@@ -53,7 +55,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: touchstone <command>\n\nCommands:\n  serve    Start the server (HTTP/1.1+2, HTTP/3, MCP-over-QUIC)\n  import   Download and build dictionaries from public sources\n")
+	fmt.Fprintf(os.Stderr, "Usage: touchstone <command>\n\nCommands:\n  serve        Start the server (HTTP/1.1+2, HTTP/3, MCP-over-QUIC)\n  import       Download and build dictionaries from public sources\n  migrate-gob  Convert data.gob files to data.db (SQLite)\n")
 }
 
 func cmdServe(args []string) {
@@ -78,6 +80,7 @@ func cmdServe(args []string) {
 	// SIGINT/SIGTERM: graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	defer deps.reg.Close()
 	defer sdb.Close()
 	if deps.adminDB != nil {
 		defer deps.adminDB.Close()

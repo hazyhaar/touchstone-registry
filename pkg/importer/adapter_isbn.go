@@ -32,8 +32,8 @@ func (a *isbnAdapter) Import(_ context.Context, sourceURL, outputDir string) err
 		return err
 	}
 
-	if err := dict.SaveGob(entries, filepath.Join(dictDir, "data.gob")); err != nil {
-		return fmt.Errorf("save gob: %w", err)
+	if err := dict.SaveSQLite(entries, filepath.Join(dictDir, "data.db")); err != nil {
+		return fmt.Errorf("save sqlite: %w", err)
 	}
 
 	return writeManifest(dictDir, &dict.Manifest{
@@ -43,7 +43,7 @@ func (a *isbnAdapter) Import(_ context.Context, sourceURL, outputDir string) err
 		Source:     "ISBN International Agency",
 		SourceURL:  sourceURL,
 		License:    "CC0",
-		DataFile:   "data.gob",
+		DataFile:   "data.db",
 		Format:     dict.FormatSpec{Normalize: "lowercase"},
 	})
 }

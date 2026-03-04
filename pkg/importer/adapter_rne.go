@@ -53,8 +53,8 @@ func (a *rneAdapter) Import(ctx context.Context, sourceURL, outputDir string) er
 		return err
 	}
 
-	if err := dict.SaveGob(entries, filepath.Join(dictDir, "data.gob")); err != nil {
-		return fmt.Errorf("save gob: %w", err)
+	if err := dict.SaveSQLite(entries, filepath.Join(dictDir, "data.db")); err != nil {
+		return fmt.Errorf("save sqlite: %w", err)
 	}
 
 	return writeManifest(dictDir, &dict.Manifest{
@@ -65,7 +65,7 @@ func (a *rneAdapter) Import(ctx context.Context, sourceURL, outputDir string) er
 		Source:       "INPI RNE",
 		SourceURL:    sourceURL,
 		License:      "Licence Ouverte v2",
-		DataFile:     "data.gob",
+		DataFile:     "data.db",
 		Format:       dict.FormatSpec{Normalize: "lowercase_ascii"},
 		EntitySpec: &dict.EntitySpec{
 			Pattern:     `^\d{9}$`,

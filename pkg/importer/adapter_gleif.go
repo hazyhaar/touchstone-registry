@@ -78,8 +78,8 @@ func (a *gleifAdapter) Import(ctx context.Context, sourceURL, outputDir string) 
 		return err
 	}
 
-	if err := dict.SaveGob(entries, filepath.Join(dictDir, "data.gob")); err != nil {
-		return fmt.Errorf("save gob: %w", err)
+	if err := dict.SaveSQLite(entries, filepath.Join(dictDir, "data.db")); err != nil {
+		return fmt.Errorf("save sqlite: %w", err)
 	}
 
 	return writeManifest(dictDir, &dict.Manifest{
@@ -89,7 +89,7 @@ func (a *gleifAdapter) Import(ctx context.Context, sourceURL, outputDir string) 
 		Source:     "GLEIF Golden Copy",
 		SourceURL:  sourceURL,
 		License:    "CC0",
-		DataFile:   "data.gob",
+		DataFile:   "data.db",
 		Format:     dict.FormatSpec{Normalize: "lowercase_ascii"},
 		EntitySpec: &dict.EntitySpec{
 			Pattern:    `^[A-Z0-9]{20}$`,

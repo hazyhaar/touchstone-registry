@@ -21,6 +21,11 @@ func (d *Dictionary) loadGob(path string) error {
 	return nil
 }
 
+// LoadGobFile is the exported version of loadGob, for use by migration tools.
+func (d *Dictionary) LoadGobFile(path string) error {
+	return d.loadGob(path)
+}
+
 // SaveGob serializes entries to a gob-encoded file at path.
 func SaveGob(entries map[string]*Entry, path string) error {
 	f, err := os.Create(path)

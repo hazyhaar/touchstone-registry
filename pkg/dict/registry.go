@@ -73,6 +73,10 @@ func (r *Registry) Load() error {
 	}
 
 	r.mu.Lock()
+	// Close previous SQLite connections before replacing.
+	for _, old := range r.dicts {
+		_ = old.Close()
+	}
 	r.dicts = newDicts
 	r.aliasPools = newAliases
 	r.mu.Unlock()
@@ -189,7 +193,7 @@ func (r *Registry) ListDicts() []DictInfo {
 
 	infos := make([]DictInfo, 0, len(r.dicts))
 	for _, d := range r.dicts {
-		entries := len(d.Entries)
+		entries := d.EntryCount()
 		if d.Manifest.Type == "alias_pool" {
 			entries = len(d.Manifest.AliasEntries)
 		}
@@ -287,9 +291,19 @@ func (r *Registry) TotalEntries() int {
 	defer r.mu.RUnlock()
 	total := 0
 	for _, d := range r.dicts {
-		total += len(d.Entries)
+		total += d.EntryCount()
 	}
 	return total
+}
+
+// Close releases all resources (SQLite connections) held by dictionaries.
+func (r *Registry) Close() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, d := range r.dicts {
+		_ = d.Close()
+	}
+	return nil
 }
 
 func contains(slice []string, s string) bool {

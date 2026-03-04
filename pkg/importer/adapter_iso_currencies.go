@@ -52,8 +52,8 @@ func (a *isoCurrenciesAdapter) Import(ctx context.Context, sourceURL, outputDir 
 		return err
 	}
 
-	if err := dict.SaveGob(entries, filepath.Join(dictDir, "data.gob")); err != nil {
-		return fmt.Errorf("save gob: %w", err)
+	if err := dict.SaveSQLite(entries, filepath.Join(dictDir, "data.db")); err != nil {
+		return fmt.Errorf("save sqlite: %w", err)
 	}
 
 	return writeManifest(dictDir, &dict.Manifest{
@@ -63,7 +63,7 @@ func (a *isoCurrenciesAdapter) Import(ctx context.Context, sourceURL, outputDir 
 		Source:     "ISO 4217",
 		SourceURL:  sourceURL,
 		License:    "PDDL",
-		DataFile:   "data.gob",
+		DataFile:   "data.db",
 		Format:     dict.FormatSpec{Normalize: "lowercase_ascii"},
 	})
 }

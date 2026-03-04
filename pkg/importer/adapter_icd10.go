@@ -52,8 +52,8 @@ func (a *icd10Adapter) Import(ctx context.Context, sourceURL, outputDir string) 
 		return err
 	}
 
-	if err := dict.SaveGob(entries, filepath.Join(dictDir, "data.gob")); err != nil {
-		return fmt.Errorf("save gob: %w", err)
+	if err := dict.SaveSQLite(entries, filepath.Join(dictDir, "data.db")); err != nil {
+		return fmt.Errorf("save sqlite: %w", err)
 	}
 
 	return writeManifest(dictDir, &dict.Manifest{
@@ -64,7 +64,7 @@ func (a *icd10Adapter) Import(ctx context.Context, sourceURL, outputDir string) 
 		Source:       "ATIH CIM-10",
 		SourceURL:    sourceURL,
 		License:      "OMS / Public",
-		DataFile:     "data.gob",
+		DataFile:     "data.db",
 		Format:       dict.FormatSpec{Normalize: "lowercase_ascii"},
 	})
 }

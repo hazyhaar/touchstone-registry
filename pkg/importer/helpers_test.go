@@ -75,7 +75,7 @@ func TestWriteManifest(t *testing.T) {
 		EntityType:   "surname",
 		Source:       "test",
 		License:      "CC0",
-		DataFile:     "data.gob",
+		DataFile:     "data.db",
 	}
 
 	if err := writeManifest(dir, m); err != nil {
@@ -90,7 +90,7 @@ func TestWriteManifest(t *testing.T) {
 	if loaded.ID != "test-dict" {
 		t.Errorf("ID = %q, want test-dict", loaded.ID)
 	}
-	if loaded.DataFile != "data.gob" {
-		t.Errorf("DataFile = %q, want data.gob", loaded.DataFile)
+	if loaded.DataFile != "data.db" {
+		t.Errorf("DataFile = %q, want data.db", loaded.DataFile)
 	}
 }

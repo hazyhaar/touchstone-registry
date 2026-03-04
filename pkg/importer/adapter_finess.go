@@ -52,8 +52,8 @@ func (a *finessAdapter) Import(ctx context.Context, sourceURL, outputDir string)
 		return err
 	}
 
-	if err := dict.SaveGob(entries, filepath.Join(dictDir, "data.gob")); err != nil {
-		return fmt.Errorf("save gob: %w", err)
+	if err := dict.SaveSQLite(entries, filepath.Join(dictDir, "data.db")); err != nil {
+		return fmt.Errorf("save sqlite: %w", err)
 	}
 
 	return writeManifest(dictDir, &dict.Manifest{
@@ -64,7 +64,7 @@ func (a *finessAdapter) Import(ctx context.Context, sourceURL, outputDir string)
 		Source:       "FINESS (data.gouv.fr)",
 		SourceURL:    sourceURL,
 		License:      "Licence Ouverte v2",
-		DataFile:     "data.gob",
+		DataFile:     "data.db",
 		Format:       dict.FormatSpec{Normalize: "lowercase_ascii"},
 	})
 }
