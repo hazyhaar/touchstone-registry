@@ -119,7 +119,9 @@ func parseRPPS(path string) (map[string]*dict.Entry, error) {
 
 	// Try pipe, then semicolon, then comma
 	if len(header) <= 1 {
-		f.Seek(0, io.SeekStart)
+		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+			return nil, fmt.Errorf("seek: %w", seekErr)
+		}
 		r = csv.NewReader(f)
 		r.Comma = ';'
 		r.LazyQuotes = true
@@ -131,7 +133,9 @@ func parseRPPS(path string) (map[string]*dict.Entry, error) {
 		}
 	}
 	if len(header) <= 1 {
-		f.Seek(0, io.SeekStart)
+		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+			return nil, fmt.Errorf("seek: %w", seekErr)
+		}
 		r = csv.NewReader(f)
 		r.Comma = ','
 		r.LazyQuotes = true

@@ -98,7 +98,9 @@ func parseNUTS(path string) (map[string]*dict.Entry, error) {
 
 	if codeCol < 0 || nameCol < 0 {
 		// Try comma-separated fallback
-		f.Seek(0, io.SeekStart)
+		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+			return nil, fmt.Errorf("seek: %w", seekErr)
+		}
 		r2 := csv.NewReader(f)
 		r2.Comma = ','
 		r2.LazyQuotes = true

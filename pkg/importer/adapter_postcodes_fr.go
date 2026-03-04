@@ -88,7 +88,9 @@ func parsePostcodesFR(path string) (map[string]*dict.Entry, error) {
 
 	// Try semicolon if comma gives single column
 	if len(header) <= 2 {
-		f.Seek(0, io.SeekStart)
+		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
+			return nil, fmt.Errorf("seek: %w", seekErr)
+		}
 		r = csv.NewReader(f)
 		r.Comma = ';'
 		r.LazyQuotes = true
