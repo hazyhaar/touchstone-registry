@@ -1,6 +1,6 @@
 > **Protocole** — Avant toute tâche, lire [`../CLAUDE.md`](../CLAUDE.md) §Protocole de recherche.
-> Commandes obligatoires : `cat <dossier>/CLAUDE.md` → `grep -rn "CLAUDE:SUMMARY"` → `grep -n "CLAUDE:WARN" <fichier>`.
-> **Interdit** : Glob/Read/Explore/find au lieu de `grep -rn`. Ne jamais lire un fichier entier en première intention.
+> Commandes obligatoires : `Read <dossier>/CLAUDE.md` → `Grep "CLAUDE:SUMMARY"` → `Grep "CLAUDE:WARN" <fichier>`.
+> **Interdit** : Bash(grep/cat/find) au lieu de Grep/Read. Ne jamais lire un fichier entier en première intention.
 
 # touchstone-registry-audit
 
@@ -17,6 +17,7 @@ Module: `github.com/hazyhaar/touchstone-registry`
 | `pkg/api/` | HTTP routes + MCP tools (classify, resolve, aliases, dicts, health) |
 | `pkg/admin/` | Admin API CRUD + audit + panel templ + migration sourcedb |
 | `pkg/admin/templates/` | Templates templ pour le panel admin |
+| `pkg/fo/` | FO anonyme: upload→tokenize→classify, rate limiter, contact form |
 | `pkg/importer/` | Framework import: adapters, sourcedb, checker |
 | `dicts/` | 12 sous-dossiers de dictionnaires embarqués |
 | `config.yaml` | Configuration YAML |
@@ -24,7 +25,7 @@ Module: `github.com/hazyhaar/touchstone-registry`
 
 ## Dépendances
 
-- `github.com/hazyhaar/pkg` (audit, chassis, dbopen, idgen, kit)
+- `github.com/hazyhaar/pkg` (audit, chassis, dbopen, horosafe, idgen, kit, observability, shield)
 - `github.com/a-h/templ` (admin panel)
 - `github.com/modelcontextprotocol/go-sdk/mcp`
 - `modernc.org/sqlite`
@@ -75,6 +76,16 @@ Auth: `Authorization: Bearer <admin_token>` (config.yaml)
 | `GET /admin/imports` | Historique imports |
 | `GET /admin/audit` | Audit log viewer |
 
+## FO Anonyme (anon.repvow.fr)
+
+| Route | Description |
+|-------|-------------|
+| `GET /` | Landing page avec upload drag & drop + formulaire contact |
+| `POST /upload` | Upload fichier → tokenize → classify → résultats (HTML ou JSON) |
+| `POST /contact` | Demande d'accès validé (honeypot anti-spam) |
+
+Rate limit: 2 req/s + 50/jour par IP. Formats: PDF, DOCX, ODT, MD, TXT, HTML (max 20 Mo).
+
 ## MCP Tools
 
 - `classify_term` — Classification single term
@@ -103,17 +114,95 @@ cert_file: ""              # TLS cert (optionnel)
 key_file: ""               # TLS key (optionnel)
 ```
 
+## NER — Détection de noms (CamemBERT ONNX)
+
+Le FO utilise **CamemBERT-NER** (`Jean-Baptiste/camembert-ner`) via ONNX pour la détection contextuelle de noms.
+F1 PER : 0.959 (vs ~0.89 spaCy). Fallback heuristique si NER non configuré.
+`scripts/ner.py` (spaCy) conservé comme rollback — changer `ner_script` dans config.yaml suffit.
+
+### Architecture
+
+```
+Upload → docpipe (text extraction) → CamemBERT NER (ONNX) → dict classify (pattern PII)
+                                         ↓
+                                   confirmedNames set → filtre patronymes/prénoms
+```
+
+- **Noms** : confirmés par CamemBERT NER (entités `I-PER`) — F1 0.959 sur PER français
+- **proper_nouns** : dérivés des entités PER + ORG + LOC + MISC (remplace PROPN POS tagging)
+- **Patterns structurés** (IBAN, CB, NIR, phone, email) : dicts classiques, pas besoin de NER
+- **common_words** : table SQLite `admin.db` (seed via `dicts/common_words.csv`) — filtre prénoms courants
+
+### Scripts NER
+
+| Script | Moteur | Usage |
+|--------|--------|-------|
+| `scripts/ner_camembert.py` | ONNX CamemBERT (actif) | ~310ms/texte, F1 0.959 PER |
+| `scripts/ner.py` | spaCy fr_core_news_md (rollback) | ~1.9s/texte, F1 ~0.89 PER |
+| `scripts/export_model.py` | optimum (one-shot) | Export HF → ONNX, exécuté 1 fois |
+
+### Modèle ONNX
+
+| Env | Path modèle |
+|-----|-------------|
+| Local | `/inference/touchstone-camembert/model/` |
+| VPS FO | `/home/ubuntu/touchstone/model/` |
+
+Fichiers : `model.onnx` (420 MB), `tokenizer.json`, `config.json`, `sentencepiece.bpe.model`
+Le script résout le path via `CAMEMBERT_MODEL_DIR` ou fallback `../model` relatif au script.
+
+### Python / venv
+
+| Env | Python | venv | Installeur |
+|-----|--------|------|------------|
+| Local (CamemBERT) | `/inference/touchstone-camembert/` | onnxruntime + tokenizers + numpy | `uv` |
+| Local (spaCy) | `/inference/touchstone-ner/` | spaCy + fr_core_news_md | `uv` |
+| VPS FO | `/home/ubuntu/touchstone/.venv/` | onnxruntime + tokenizers + numpy + spaCy | `uv` (`~/.local/bin/uv`) |
+
+**Règle** : Python local uniquement sur `/inference/`. Jamais de venv dans le repo ou sur le disque de dev.
+
+### Config YAML (VPS)
+
+```yaml
+ner_python: "/home/ubuntu/touchstone/.venv/bin/python"
+ner_script: "/home/ubuntu/touchstone/scripts/ner_camembert.py"
+```
+
+### Rollback vers spaCy
+
+```yaml
+ner_script: "/home/ubuntu/touchstone/scripts/ner.py"
+# puis: systemctl restart touchstone
+```
+
+### Gestion common_words en prod (sans redéployer)
+
+```bash
+# Ajouter un mot
+sqlite3 /home/ubuntu/touchstone/admin.db "INSERT OR IGNORE INTO common_words VALUES('nouveau_mot','surname')"
+# Lister
+sqlite3 /home/ubuntu/touchstone/admin.db "SELECT * FROM common_words ORDER BY word"
+# Supprimer
+sqlite3 /home/ubuntu/touchstone/admin.db "DELETE FROM common_words WHERE word='mot'"
+# Puis restart pour recharger
+systemctl restart touchstone
+```
+
 ## Invariants
 
 - Config via **YAML** (pas env vars)
 - Dictionnaires embarqués dans `dicts/`
 - Manifest YAML par dict avec `entity_spec`, `response_fields`, `type`
 - Admin DB séparée (admin.db) avec audit via `hazyhaar/pkg/audit`
-- Au démarrage : sync auto disque→admin DB + migration legacy sources
+- Au démarrage : sync auto disque→admin DB + migration legacy sources + seed common_words CSV
 - Templates templ : `make generate` avant build
+- **NER** : spaCy via subprocess, fallback heuristique si non configuré
+- **common_words** : données dans `dicts/common_words.csv`, gérées en SQLite après seed
 
 ## NE PAS
 
 - Utiliser env vars pour la config (YAML est le standard ici)
 - Modifier les fichiers `*_templ.go` — générés par `templ generate`
 - Oublier `make generate` avant build si les .templ changent
+- Hardcoder des listes de mots dans Go — tout en SQLite ou CSV
+- Installer Python / venvs en dehors de `/inference/` (local) ou `.venv/` (VPS)
