@@ -4,6 +4,7 @@
 package dict
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -15,7 +16,7 @@ import (
 func SaveSQLite(entries map[string]*Entry, path string) error {
 	_ = os.Remove(path) // start fresh
 
-	db, err := sql.Open("sqlite", path+"?_pragma=journal_mode(wal)&_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", path+"?_txlock=immediate&_pragma=journal_mode(wal)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)")
 	if err != nil {
 		return fmt.Errorf("open sqlite: %w", err)
 	}
@@ -25,7 +26,7 @@ func SaveSQLite(entries map[string]*Entry, path string) error {
 		return fmt.Errorf("create table: %w", err)
 	}
 
-	tx, err := db.Begin()
+	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("begin: %w", err)
 	}
@@ -54,7 +55,7 @@ func SaveSQLite(entries map[string]*Entry, path string) error {
 			if err := tx.Commit(); err != nil {
 				return fmt.Errorf("commit batch: %w", err)
 			}
-			tx, err = db.Begin()
+			tx, err = db.BeginTx(context.Background(), nil)
 			if err != nil {
 				return fmt.Errorf("begin batch: %w", err)
 			}
@@ -70,7 +71,7 @@ func SaveSQLite(entries map[string]*Entry, path string) error {
 
 // loadSQLite opens a SQLite dict in read-only mode and caches the entry count.
 func (d *Dictionary) loadSQLite(path string) error {
-	db, err := sql.Open("sqlite", path+"?mode=ro&_pragma=journal_mode(wal)&_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", path+"?mode=ro&_txlock=immediate&_pragma=journal_mode(wal)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)")
 	if err != nil {
 		return fmt.Errorf("open sqlite: %w", err)
 	}

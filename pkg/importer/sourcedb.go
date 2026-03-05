@@ -30,7 +30,7 @@ type SourceDB struct {
 // OpenSourceDB opens (or creates) the SQLite database at path and ensures the
 // import_sources table exists.
 func OpenSourceDB(path string) (*SourceDB, error) {
-	db, err := sql.Open("sqlite", path+"?_pragma=journal_mode(wal)&_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", path+"?_txlock=immediate&_pragma=journal_mode(wal)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)")
 	if err != nil {
 		return nil, fmt.Errorf("open source db: %w", err)
 	}
