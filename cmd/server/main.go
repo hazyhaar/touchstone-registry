@@ -16,9 +16,14 @@ import (
 
 	"github.com/hazyhaar/pkg/audit"
 	"github.com/hazyhaar/pkg/chassis"
+	"github.com/hazyhaar/pkg/docpipe"
+	"github.com/hazyhaar/pkg/horosafe"
+	"github.com/hazyhaar/pkg/observability"
+	"github.com/hazyhaar/pkg/shield"
 	"github.com/hazyhaar/touchstone-registry/pkg/admin"
 	"github.com/hazyhaar/touchstone-registry/pkg/api"
 	"github.com/hazyhaar/touchstone-registry/pkg/dict"
+	"github.com/hazyhaar/touchstone-registry/pkg/fo"
 	"github.com/hazyhaar/touchstone-registry/pkg/importer"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"gopkg.in/yaml.v3"
@@ -27,12 +32,20 @@ import (
 )
 
 type config struct {
-	Addr       string `yaml:"addr"`
-	DictsDir   string `yaml:"dicts_dir"`
-	CertFile   string `yaml:"cert_file"`
-	KeyFile    string `yaml:"key_file"`
-	AdminToken string `yaml:"admin_token"`
-	AdminDB    string `yaml:"admin_db"`
+	Addr         string `yaml:"addr"`
+	DictsDir     string `yaml:"dicts_dir"`
+	CertFile     string `yaml:"cert_file"`
+	KeyFile      string `yaml:"key_file"`
+	AdminToken   string `yaml:"admin_token"`
+	AdminDB      string `yaml:"admin_db"`
+	SMTPHost     string `yaml:"smtp_host"`
+	SMTPPort     int    `yaml:"smtp_port"`
+	SMTPUser     string `yaml:"smtp_user"`
+	SMTPPass     string `yaml:"smtp_pass"`
+	ContactEmail   string   `yaml:"contact_email"`
+	FOAllowedDicts []string `yaml:"fo_allowed_dicts"`
+	NERPython      string   `yaml:"ner_python"` // path to python with spaCy
+	NERScript      string   `yaml:"ner_script"` // path to scripts/ner.py
 }
 
 func main() {
@@ -80,6 +93,31 @@ func cmdServe(args []string) {
 	// SIGINT/SIGTERM: graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	// Validate admin token strength
+	if cfg.AdminToken != "" {
+		if err := horosafe.ValidateSecret([]byte(cfg.AdminToken)); err != nil {
+			logger.Warn("admin token validation failed", "error", err)
+		}
+	}
+
+	// Observability — separate DB for metrics/heartbeat.
+	obsPath := filepath.Join(cfg.DictsDir, "obs.db")
+	obsDB, obsErr := sql.Open("sqlite", obsPath+"?_txlock=immediate&_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)")
+	if obsErr != nil {
+		logger.Warn("observability: open failed", "error", obsErr)
+	} else {
+		if initErr := observability.Init(obsDB); initErr != nil {
+			logger.Warn("observability: init failed", "error", initErr)
+		} else {
+			hbeat := observability.NewHeartbeatWriter(obsDB, "touchstone", 15*time.Second)
+			hbeat.Start(ctx)
+			defer hbeat.Stop()
+			logger.Info("observability enabled", "path", obsPath)
+		}
+		defer obsDB.Close()
+	}
+
 	defer deps.reg.Close()
 	defer sdb.Close()
 	if deps.adminDB != nil {
@@ -103,6 +141,7 @@ func cmdServe(args []string) {
 	}()
 
 	go deps.checker.Start(ctx)
+	go deps.foRL.StartGC(ctx)
 
 	// Start chassis (TCP + QUIC).
 	go func() {
@@ -127,6 +166,7 @@ type serverDeps struct {
 	checker *importer.Checker
 	adminDB *sql.DB
 	auditor *audit.SQLiteLogger
+	foRL    *fo.RateLimiter
 }
 
 func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) *serverDeps {
@@ -153,21 +193,53 @@ func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) *server
 	topMux.Handle("/v1/", apiRouter)
 	topMux.Handle("/v1/health", apiRouter)
 
-	// Admin DB + admin routes.
-	var adminDB *sql.DB
+	// FO (anonymous upload → classify) routes at /.
+	pipe := docpipe.New(docpipe.Config{})
+	foRL := fo.NewRateLimiter(2, 50)
+	foDeps := fo.Deps{
+		Registry:     reg,
+		Pipe:         pipe,
+		Logger:       logger,
+		AllowedDicts: cfg.FOAllowedDicts,
+		NERPython:    cfg.NERPython,
+		NERScript:    cfg.NERScript,
+	}
+	// Admin DB — always opened (FO needs it for common_words + contact form).
+	dbPath := cfg.AdminDB
+	if dbPath == "" {
+		dbPath = filepath.Join(cfg.DictsDir, "admin.db")
+	}
+	adminDB, err := sql.Open("sqlite", dbPath+"?_txlock=immediate&_pragma=journal_mode(WAL)&_pragma=busy_timeout(10000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)")
+	if err != nil {
+		logger.Error("admin db open failed", "error", err)
+		os.Exit(1)
+	}
+	// FO tables (always needed).
+	if _, err := adminDB.Exec(fo.AccessRequestSchema); err != nil {
+		logger.Error("access_requests schema init failed", "error", err)
+		os.Exit(1)
+	}
+	// Load common_words from CSV (INSERT OR IGNORE — safe on every restart).
+	cwPath := filepath.Join(cfg.DictsDir, "common_words.csv")
+	if err := fo.LoadCommonWordsCSV(adminDB, cwPath); err != nil {
+		logger.Warn("common_words CSV load failed (table may be empty)", "error", err, "path", cwPath)
+	}
+	foDeps.AdminDB = adminDB
+
+	// SMTP config for FO contact form.
+	if cfg.SMTPHost != "" {
+		foDeps.SMTP = &fo.SMTPConfig{
+			Host: cfg.SMTPHost,
+			Port: cfg.SMTPPort,
+			User: cfg.SMTPUser,
+			Pass: cfg.SMTPPass,
+			To:   cfg.ContactEmail,
+		}
+	}
+
+	// Admin routes (only if admin_token is set).
 	var auditor *audit.SQLiteLogger
 	if cfg.AdminToken != "" {
-		dbPath := cfg.AdminDB
-		if dbPath == "" {
-			dbPath = filepath.Join(cfg.DictsDir, "admin.db")
-		}
-
-		var err error
-		adminDB, err = sql.Open("sqlite", dbPath+"?_txlock=immediate&_pragma=journal_mode(WAL)&_pragma=busy_timeout(10000)&_pragma=foreign_keys(1)&_pragma=synchronous(NORMAL)")
-		if err != nil {
-			logger.Error("admin db open failed", "error", err)
-			os.Exit(1)
-		}
 		if _, err := adminDB.Exec(admin.Schema); err != nil {
 			logger.Error("admin schema init failed", "error", err)
 			os.Exit(1)
@@ -192,20 +264,27 @@ func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) *server
 		adminAPIRouter := admin.NewRouter(adminSvc, cfg.AdminToken)
 		topMux.Handle("/admin/v1/", adminAPIRouter)
 
-		// Admin panel (HTML pages, no auth for convenience — protect via network).
+		// Admin panel (HTML pages, protected by same bearer token as API).
 		panelRouter := admin.NewPanelRouter(adminSvc, reg)
-		topMux.Handle("/admin/", panelRouter)
+		topMux.Handle("/admin/", admin.BearerAuth(cfg.AdminToken)(panelRouter))
 		logger.Info("admin API + panel enabled")
 	}
+
+	// FO routes at / with rate limiting.
+	foRouter := fo.NewRouter(foDeps)
+	topMux.Handle("/", foRL.Middleware(foRouter))
 
 	// MCP server with Touchstone tools.
 	mcpSrv := mcp.NewServer(&mcp.Implementation{Name: "touchstone", Version: "0.1.0"}, nil)
 	api.RegisterMCPTools(mcpSrv, reg)
 
+	// Global security headers via shield package.
+	globalHandler := shield.SecurityHeaders(shield.DefaultHeaders())(topMux)
+
 	// Chassis: dual-transport (TCP+QUIC) with TLS, security headers, MCP.
 	srv, err := chassis.New(chassis.Config{
 		Addr:      cfg.Addr,
-		Handler:   topMux,
+		Handler:   globalHandler,
 		MCPServer: mcpSrv,
 		CertFile:  cfg.CertFile,
 		KeyFile:   cfg.KeyFile,
@@ -220,7 +299,7 @@ func initServer(sdb *importer.SourceDB, cfg config, logger *slog.Logger) *server
 	// Source availability checker (every 24h).
 	checker := importer.NewChecker(sdb, logger, 24*time.Hour)
 
-	return &serverDeps{reg: reg, srv: srv, checker: checker, adminDB: adminDB, auditor: auditor}
+	return &serverDeps{reg: reg, srv: srv, checker: checker, adminDB: adminDB, auditor: auditor, foRL: foRL}
 }
 
 func loadConfig(path string, logger *slog.Logger) config {
@@ -244,3 +323,5 @@ func loadConfig(path string, logger *slog.Logger) config {
 	}
 	return cfg
 }
+
+// globalSecurityHeaders applies baseline security headers to all routes.
